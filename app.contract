@@ -113,9 +113,10 @@ component Habits
               list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 if habits.length > 0
                   section
-                    row
-                      text `${doneCount} of ${habits.length} done` flex=1 testId="progress"
+                    // A focal ring over its count, centred: side by side, a Mac sidebar squeezed the text to a letter a line.
+                    column align-items="center" gap=8 padding-top=12 padding-bottom=12
                       RingProgress(label="Done Today", value=percent, fraction=fraction, tint=none)
+                      text `${doneCount} of ${habits.length} done` color="-exact-secondary-label" testId="progress"
                 section
                   for h in habits key=h.id
                     row delete=remove(h.id)
