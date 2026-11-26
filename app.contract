@@ -95,7 +95,7 @@ component Habits
     main navigationKey=`${top(nav).id}` navigationBack="back" navigate=follow testId="app" width="100%" height="100%"
       for e in stack(nav) key=e.id
         if e.name == "today"
-          column navigationKey=`${e.id}` navigationScroll="habit-list" position="absolute" inset=0 display="flex" flex-direction="column"
+          column navigationKey=`${e.id}` navigationSplit="split" navigationScroll="habit-list" position="absolute" inset=0 display="flex" flex-direction="column"
             header display="flex" align-items="center"
               text "Today" role="heading" aria-level=1 flex=1
               text formatDate(shown, time.utcOffset, "medium") testId="today-date"
@@ -115,14 +115,14 @@ component Habits
                   section
                     row
                       text `${doneCount} of ${habits.length} done` flex=1 testId="progress"
-                      RingProgress(label="", value=percent, fraction=fraction, tint=none)
+                      RingProgress(label="Done Today", value=percent, fraction=fraction, tint=none)
                 section
                   for h in habits key=h.id
                     row delete=remove(h.id)
                       input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
                       // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
                       link href=path("habit", h.id) aria-label=`Details for ${h.name}` testId=`open-${h.id}`
-                        flex=1 min-width=0 display="flex" align-items="center" gap=8
+                        flex=1 min-width=0 min-height=44 display="flex" align-items="center" gap=8
                         column flex=1 min-width=0
                           text h.name testId=`name-${h.id}`
                           text streakText(h.streak) font="-exact-footnote" color="-exact-secondary-label" testId=`streak-${h.id}`
