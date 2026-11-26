@@ -1,0 +1,123 @@
+// Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
+// SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
+// keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
+use EmptyState from "exact:content"
+
+routes nav
+  today "/"
+    habit "/habit/:id"
+    add "/add"
+
+shape Time
+  epochAtZero: number
+  utcOffset: number
+
+shape Habit
+  id: string
+  name: string
+  doneToday: bool
+  streak: number
+  best: number
+  total: number
+
+shape DayMark
+  day: string
+  done: bool
+
+shape Reply
+  ok: bool
+  error: string
+
+fn dayCount(n: number): string = n == 1 ? "1 day" : `${n} days`
+fn streakText(n: number): string = n == 0 ? "No streak" : `${n}-day streak`
+fn nameOf(hs: Habit[], id: string): string = match first(hs.filter(h => h.id == id)) { case some(h) => h.name, case none => "" }
+fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
+
+component Habits
+  state now = 0
+  state draftName = ""
+  state refusal = ""
+  state aimed = ""
+  resource time = exactTime() as shape Time
+  derive shown = time.epochAtZero + now
+  derive today = formatDate(shown, time.utcOffset, "iso")
+  derive selected = match stack(nav).filter(e => e.name == "habit").at(-1) { case some(e) => e.params.id, case none => "" }
+  resource habits = loadHabits(today) as shape Habit[] else empty()
+  resource days = loadDays(selected, today) when selected != "" as shape DayMark[] else empty()
+  mutation added as shape Reply refreshes habits then afterSave
+  mutation checked as shape Reply queue refreshes habits, days
+  mutation removed as shape Reply refreshes habits
+  derive doneCount = habits.filter(h => h.doneToday).length
+  derive saveError = match added { case some(r) => r.error, case none => "" }
+  derive saveHint = pending(added) ? "Saving…" : draftName.trim() == "" ? "Enter a name to save." : ""
+
+  task tick mount
+    every(60000, step)
+  action step
+    now = performanceNow()
+
+  action back
+    nav = back(nav)
+  action follow(url: string)
+    nav = top(nav).name == "habit" and url.startsWith("/habit/") ? replace(nav, url) : go(nav, url)
+  action openAdd
+    draftName = ""
+    refusal = ""
+    nav = push(nav, "/add")
+  action editName(v: string)
+    draftName = v
+  action save
+    if draftName.trim() != "" and not pending(added)
+      send added = addHabit(draftName.trim())
+  action afterSave
+    refusal = saveError
+    if saveError == "" and top(nav).name == "add"
+      nav = back(nav)
+  // The day is read from the clock at the tap, not from the ticked `today` (dates-and-days).
+  action toggle(id: string, done: bool)
+    let at = time.epochAtZero + performanceNow()
+    now = performanceNow()
+    send checked = setDone(id, formatDate(at, time.utcOffset, "iso"), done)
+  action askRemove(id: string)
+    aimed = id
+    showModal("remove")
+  action remove(id: string)
+    send removed = removeHabit(id)
+    if selected == id
+      nav = back(nav)
+
+  // PLACEHOLDER VIEW: the UI stage replaces everything under `view`.
+  view
+    main navigationKey=`${top(nav).id}` navigationBack="back" navigate=follow testId="app" width="100%" height="100%"
+      for e in stack(nav) key=e.id
+        if e.name == "today"
+          column navigationKey=`${e.id}` navigationScroll="habit-list" position="absolute" inset=0 display="flex" flex-direction="column"
+            header display="flex" align-items="center"
+              text "Today" role="heading" aria-level=1 flex=1
+              button press=openAdd aria-label="Add Habit" testId="add-habit"
+                image "symbol:add"
+            list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
+              section
+                for h in habits key=h.id
+                  row
+                    input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
+                    text h.name flex=1 testId=`name-${h.id}`
+                    text streakText(h.streak) testId=`streak-${h.id}`
+        if e.name == "add"
+          column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll="add-form" position="absolute" inset=0
+            header display="flex" align-items="center" justify-content="space-between"
+              button press=back aria-label="Cancel" testId="add-cancel"
+                image "symbol:close"
+              text "New Habit" role="heading"
+              button press=save buttonStyle="bordered-prominent" aria-label="Save" testId="add-save" disabled=(draftName.trim() == "" or pending(added))
+                image "symbol:checkmark"
+            list id="add-form" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
+              section
+                row
+                  input value=draftName input=editName submit=save placeholder="Name" aria-label="Name" autofocus=true testId="add-name"
+      dialog id="remove" role="alertdialog" aria-label="Delete Habit?"
+        text "Its history is deleted too."
+        button press=remove(aimed) destructive=true commandfor="remove" command="close" testId="remove-confirm"
+          text "Delete"
+        button commandfor="remove" command="close" testId="remove-cancel"
+          text "Cancel"
