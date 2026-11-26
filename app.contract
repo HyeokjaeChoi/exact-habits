@@ -1,7 +1,7 @@
 // Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
 // SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
 // keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
-use EmptyState from "exact:content"
+use DoneMark, EmptyState, RingProgress from "exact:content"
 
 routes nav
   today "/"
@@ -86,7 +86,11 @@ component Habits
     if selected == id
       nav = back(nav)
 
-  // PLACEHOLDER VIEW: the UI stage replaces everything under `view`.
+  derive fraction = habits.length == 0 ? 0 : doneCount / habits.length
+  derive percent = `${round(fraction * 100)}%`
+  action reload
+    refresh habits
+
   view
     main navigationKey=`${top(nav).id}` navigationBack="back" navigate=follow testId="app" width="100%" height="100%"
       for e in stack(nav) key=e.id
@@ -94,19 +98,77 @@ component Habits
           column navigationKey=`${e.id}` navigationScroll="habit-list" position="absolute" inset=0 display="flex" flex-direction="column"
             header display="flex" align-items="center"
               text "Today" role="heading" aria-level=1 flex=1
+              text formatDate(shown, time.utcOffset, "medium") testId="today-date"
               button press=openAdd aria-label="Add Habit" testId="add-habit"
                 image "symbol:add"
-            list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
-              section
-                for h in habits key=h.id
-                  row
-                    input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
-                    text h.name flex=1 testId=`name-${h.id}`
-                    text streakText(h.streak) testId=`streak-${h.id}`
+            if failed(habits)
+              EmptyState(symbol="symbol:alert", title="Can’t Open Habits", message="Something went wrong reading them.")
+                button press=reload testId="retry"
+                  text "Try Again"
+            else if habits.length == 0 and not pending(habits)
+              EmptyState(symbol="symbol:sparkles", title="No Habits", message="Add a habit to start a streak.")
+                button press=openAdd buttonStyle="filled" testId="empty-add"
+                  text "Add Habit"
+            else
+              list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
+                if habits.length > 0
+                  section
+                    row
+                      text `${doneCount} of ${habits.length} done` flex=1 testId="progress"
+                      RingProgress(label="", value=percent, fraction=fraction, tint=none)
+                section
+                  for h in habits key=h.id
+                    row delete=remove(h.id)
+                      input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
+                      // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
+                      link href=path("habit", h.id) aria-label=`Details for ${h.name}` testId=`open-${h.id}`
+                        flex=1 min-width=0 display="flex" align-items="center" gap=8
+                        column flex=1 min-width=0
+                          text h.name testId=`name-${h.id}`
+                          text streakText(h.streak) font="-exact-footnote" color="-exact-secondary-label" testId=`streak-${h.id}`
+                        image "symbol:forward-chevron" aria-hidden=true
+        if e.name == "habit"
+          column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"
+            header display="flex" align-items="center"
+              text (found(habits, e.params.id) or pending(habits) ? nameOf(habits, e.params.id) : "Not Found") role="heading" aria-level=2 testId="detail-title"
+            if found(habits, e.params.id) or pending(habits)
+              list id="habit-detail" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
+                for h in habits.filter(x => x.id == e.params.id) key=h.id
+                  section
+                    row
+                      text "Done Today" flex=1
+                      input type="checkbox" switch checked=h.doneToday change=toggle(h.id) aria-label="Done Today" testId="detail-check"
+                  section
+                    row
+                      text "Streak" flex=1
+                      text dayCount(h.streak) testId="detail-streak"
+                    row
+                      text "Best" flex=1
+                      text dayCount(h.best) testId="detail-best"
+                    row
+                      text "Total" flex=1
+                      text dayCount(h.total) testId="detail-total"
+                  section
+                    header
+                      text "Last 28 Days"
+                    row padding-top=8 padding-bottom=8 testId="history"
+                      column flex=1 min-width=0 gap=12
+                        for w in [0, 1, 2, 3] key=w
+                          row gap=4
+                            for d in days.slice(w * 7, w * 7 + 7) key=d.day
+                              view flex=1 min-width=0 testId=`day-${d.day}`
+                                DoneMark(caption=d.day.slice(8), done=d.done)
+                  section
+                    button press=askRemove(h.id) destructive=true testId="delete-habit"
+                      text "Delete Habit"
+            else
+              EmptyState(symbol="symbol:alert", title="No Such Habit", message="It may have been deleted.")
+                button press=back buttonStyle="filled" testId="missing-back"
+                  text "Back to Today"
         if e.name == "add"
-          column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll="add-form" position="absolute" inset=0
+          column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll="add-form" position="absolute" inset=0 display="flex" flex-direction="column"
             header display="flex" align-items="center" justify-content="space-between"
-              button press=back aria-label="Cancel" testId="add-cancel"
+              button id="back" press=back aria-label="Cancel" testId="add-cancel"
                 image "symbol:close"
               text "New Habit" role="heading"
               button press=save buttonStyle="bordered-prominent" aria-label="Save" testId="add-save" disabled=(draftName.trim() == "" or pending(added))
@@ -114,7 +176,12 @@ component Habits
             list id="add-form" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
               section
                 row
-                  input value=draftName input=editName submit=save placeholder="Name" aria-label="Name" autofocus=true testId="add-name"
+                  column flex=1 min-width=0 gap=4
+                    input value=draftName input=editName submit=save placeholder="Name" aria-label="Name" autofocus=true aria-invalid=(refusal != "") testId="add-name"
+                    if refusal != ""
+                      text refusal font="-exact-footnote" color="-exact-system-red" testId="add-error"
+                footer
+                  text saveHint testId="add-hint"
       dialog id="remove" role="alertdialog" aria-label="Delete Habit?"
         text "Its history is deleted too."
         button press=remove(aimed) destructive=true commandfor="remove" command="close" testId="remove-confirm"
