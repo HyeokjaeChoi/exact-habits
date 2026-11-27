@@ -7,9 +7,9 @@ conditions:
   - field: file_path
     operator: regex_match
     pattern: \.contract$
-  - field: new_text
+  - field: content
     operator: regex_match
-    pattern: symbol:sf/|#[0-9a-fA-F]{3,8}\b|rgba?\(
+    pattern: symbol:sf/|["']#[0-9a-fA-F]{3,8}["']|rgba?\(
 ---
 
-⚠️ **Platform-native rule.** Use `symbol:` roles (not `symbol:sf/…`, blank on web and Android) and system colour roles (`-exact-system-<name>`, `-exact-*-label`), not hex or rgb colours.
+**Platform-native rule.** Use `symbol:` roles (not `symbol:sf/…`, blank on web and Android) and system colour roles (`-exact-system-<name>`, `-exact-*-label`), not hex or rgb colours. `bun test` fails on these.
