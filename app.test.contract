@@ -107,7 +107,50 @@ test "a streak stays alive a day, grows, then breaks after a missed day"
   clock data
   expect text "detail-best" == "2 days"
   expect text "detail-total" == "2 days"
-  expect text "detail-streak" == "0 days"
+  expect text "detail-streak" == "Current Streak0days in a row"
+
+test "the streak card reads the current streak, in step with checking and unchecking"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  clock +172800000
+  clock data
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  tap "open-1"
+  clock settle
+  clock data
+  expect state habits.0.streak == 2
+  expect state habits.0.best == 3
+  expect text "detail-streak" == "Current Streak2days in a row"
+  expect text "detail-best" == "3 days"
+  expect text "detail-total" == "5 days"
+  tap "detail-check"
+  clock data
+  expect text "detail-streak" == "Current Streak1day in a row"
+  tap "detail-check"
+  clock data
+  expect text "detail-streak" == "Current Streak2days in a row"
 
 test "the day turns over at local midnight"
   epoch "2026-03-15T06:58:00Z"
@@ -173,7 +216,7 @@ test "the history marks today done once checked on the detail"
   tap "detail-check"
   clock data
   expect state days.27.done == true
-  expect text "detail-streak" == "1 day"
+  expect text "detail-streak" == "Current Streak1day in a row"
 
 test "an id that names nothing says Not Found, and Back returns to Today"
   clock data
