@@ -1,0 +1,6 @@
+{
+  "min_recall": 0.75,
+  "min_precision": 0.6,
+  "max_false_positives_on_clean_cases": 0,
+  "max_recall_drop_vs_baseline": 0.15
+}

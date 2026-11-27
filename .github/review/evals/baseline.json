@@ -1,0 +1,7 @@
+{
+  "note": "Last accepted eval scores. Update it in the PR that changes the review, after the eval passes. null means no baseline yet.",
+  "recall": null,
+  "precision": null,
+  "false_positives_on_clean_cases": null,
+  "cases": null
+}
