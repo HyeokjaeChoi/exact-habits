@@ -230,3 +230,20 @@ test "an id that names nothing says Not Found, and Back returns to Today"
   clock settle
   expect tree has "add-habit"
   expect tree missing "missing-back"
+
+test "the row's link says the habit and its streak to a screen reader"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "check-1"
+  clock data
+  tap "Details for Read, 1-day streak"
+  clock settle
+  clock data
+  expect text "detail-title" == "Read"
