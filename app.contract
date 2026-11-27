@@ -1,7 +1,7 @@
 // Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
 // SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
 // keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
-use DoneMark, EmptyState, RingProgress from "exact:content"
+use DoneMark, EmptyState, RingProgress, SummaryCard from "exact:content"
 
 routes nav
   today "/"
@@ -135,14 +135,16 @@ component Habits
             if found(habits, e.params.id) or pending(habits)
               list id="habit-detail" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 for h in habits.filter(x => x.id == e.params.id) key=h.id
+                  // The hero: the current streak over its progress toward the best, in a transparent section so the part's own fill shows, centred and at most a phone wide.
+                  section background-color="transparent"
+                    row
+                      column flex=1 min-width=0 max-width="26.25rem" margin-left="auto" margin-right="auto" testId="detail-streak"
+                        SummaryCard(label="Current Streak", value=`${h.streak}`, detail=(h.streak == 1 ? "day in a row" : "days in a row"), progress=(h.best > 0 ? some(min(1, h.streak / h.best)) : none), symbol=none)
                   section
                     row
                       text "Done Today" flex=1
                       input type="checkbox" switch checked=h.doneToday change=toggle(h.id) aria-label="Done Today" testId="detail-check"
                   section
-                    row
-                      text "Streak" flex=1
-                      text dayCount(h.streak) testId="detail-streak"
                     row
                       text "Best" flex=1
                       text dayCount(h.best) testId="detail-best"

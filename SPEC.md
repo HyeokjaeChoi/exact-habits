@@ -56,7 +56,8 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `No streak`, `1-day 
 
 **Habit** (route `habit`, `/habit/:id`)
 - `detail-title`: the heading, the habit's name, or `Not Found` once loaded and the id names nothing.
-- `detail-streak`, `detail-best`, `detail-total`: `dayCount` of each.
+- `detail-streak`: wraps the first section's `SummaryCard` (`exact:content`, in a transparent section, centred, at most `26.25rem` wide): label `Current Streak`, value `h.streak` as a number, detail `day in a row` when the streak is 1 and `days in a row` otherwise, progress `min(1, streak / best)` when `best > 0` (absent when `best == 0`). A text read of `detail-streak` joins the three texts without separators, e.g. `Current Streak2days in a row`. There is no `Streak` row.
+- `detail-best`, `detail-total`: `dayCount` of each, rows in the section under the `Done Today` switch.
 - `detail-check`: a switch for today, same `toggle(h.id)`.
 - `history`: the last 28 days (`days`), seven to a row, oldest first; each day `day-<YYYY-MM-DD>` showing done or not (`DoneMark` from `exact:content`).
 - `delete-habit`: a destructive button, `askRemove(h.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
