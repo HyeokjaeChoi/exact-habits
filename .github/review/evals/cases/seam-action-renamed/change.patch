@@ -1,0 +1,31 @@
+diff --git a/app.contract b/app.contract
+index 7ef18b2..04987b7 100644
+--- a/app.contract
++++ b/app.contract
+@@ -75,7 +75,7 @@ component Habits
+     if saveError == "" and top(nav).name == "add"
+       nav = back(nav)
+   // The day is read from the clock at the tap, not from the ticked `today` (dates-and-days).
+-  action toggle(id: string, done: bool)
++  action toggleToday(id: string, done: bool)
+     let at = time.epochAtZero + performanceNow()
+     now = performanceNow()
+     send checked = setDone(id, formatDate(at, time.utcOffset, "iso"), done)
+@@ -120,7 +120,7 @@ component Habits
+                 section
+                   for h in habits key=h.id
+                     row delete=remove(h.id)
+-                      input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
++                      input type="checkbox" checked=h.doneToday change=toggleToday(h.id) aria-label=h.name testId=`check-${h.id}`
+                       // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
+                       // Done is the checkbox's to say; the strike-through is decoration. The streak reaches a screen reader through the link's label.
+                       link href=path("habit", h.id) aria-label=rowLabel(h) testId=`open-${h.id}`
+@@ -145,7 +145,7 @@ component Habits
+                   section
+                     row
+                       text "Done Today" flex=1
+-                      input type="checkbox" switch checked=h.doneToday change=toggle(h.id) aria-label="Done Today" testId="detail-check"
++                      input type="checkbox" switch checked=h.doneToday change=toggleToday(h.id) aria-label="Done Today" testId="detail-check"
+                   section
+                     row
+                       text "Best" flex=1
