@@ -51,7 +51,7 @@ const sources: Sources = {
     return { ok: false, error: `A habit called ${String(rows[0]?.[0] ?? name)} already exists.` };
   }),
   setDone: ([id, day, done], _store, storage) => use(storage, async db => {
-    if (done) await db.execute('INSERT OR IGNORE INTO checkins (habit_id, day) VALUES (?, ?)', [id, day]);
+    if (done) await db.execute('INSERT INTO checkins (habit_id, day) VALUES (?, ?)', [id, day]);
     else await db.execute('DELETE FROM checkins WHERE habit_id = ? AND day = ?', [id, day]);
     return saved();
   }),
