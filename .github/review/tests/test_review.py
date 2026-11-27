@@ -98,6 +98,12 @@ class Pure(unittest.TestCase):
         self.assertIn("<!-- ai-finding:abc123 cat=spec sev=Major -->", body)
         self.assertTrue(review.FINDING_MARK.search(body))
 
+    def test_literal_backslash_n_becomes_a_line_break(self):
+        f = dict(finding("f1"), fp="abc123", verifier="a\\nb", scenario="x\\ny")
+        self.assertNotIn("\\n", review.inline_body(f))
+        r = {"sha": "b" * 40, "requirements": [], "findings": [], "needs_look": [], "dropped": [], "candidates": 0, "context_read": [], "notes": "p1\\n\\np2", "meta": {}}
+        self.assertNotIn("\\n", review.summary_markdown(r, [])[0])
+
     def test_redact(self):
         self.assertNotIn("sk-ant-abcdefgh12345", review.redact("key sk-ant-abcdefgh12345 end"))
 
