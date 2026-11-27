@@ -5,9 +5,16 @@ export function addDays(day: string, n: number): string {
   return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
 }
 
-/** The last n days, oldest first, ending at today. */
-export function lastDays(today: string, n: number): string[] {
-  return Array.from({ length: n }, (_, i) => addDays(today, i - n + 1));
+/** The Sunday on or before day. */
+export function weekStart(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return addDays(day, -new Date(Date.UTC(y, m - 1, d)).getUTCDay());
+}
+
+/** The 28 days of four whole weeks, oldest first: from the Sunday three weeks before this week's, to this week's Saturday. */
+export function calendarDays(today: string): string[] {
+  const first = addDays(weekStart(today), -21);
+  return Array.from({ length: 28 }, (_, i) => addDays(first, i));
 }
 
 export function stats(doneDays: string[], today: string): { doneToday: boolean; streak: number; best: number; total: number } {
