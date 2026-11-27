@@ -1,0 +1,21 @@
+{
+  "id": "load-days-inline-id",
+  "description": "loadDays builds its SQL by string interpolation of the id argument.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "perf/13-loaddays-query",
+  "pr": {
+    "title": "loadDays: inline the id in the query",
+    "body": "Use a template string for the SELECT so the query is easier to read in logs."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "app.ts",
+      "kind": "security",
+      "description": "loadDays interpolates the string argument `id` directly into the SQL (`habit_id = ${id}`) instead of binding it, so a crafted id such as `0 OR 1=1` changes the query (SQL injection). The other statements bind parameters."
+    }
+  ]
+}
