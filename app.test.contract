@@ -1,6 +1,9 @@
 test "no habits shows the empty state; its button opens the add sheet and Cancel closes it"
   clock data
   expect tree has "empty-add"
+  expect tree has "quick-Read"
+  expect tree has "quick-Drink Water"
+  expect tree has "quick-Journal"
   expect tree missing "progress"
   expect tree missing "progress-bar"
   tap "empty-add"
@@ -184,11 +187,15 @@ test "a habit opens its detail; delete asks, Cancel keeps it, Delete returns to 
   tap "open-1"
   clock settle
   expect text "detail-title" == "Read"
+  tap "habit-menu"
+  clock settle
   tap "delete-habit"
   clock settle
   tap "remove-cancel"
   clock settle
   expect text "detail-title" == "Read"
+  tap "habit-menu"
+  clock settle
   tap "delete-habit"
   clock settle
   tap "remove-confirm"
@@ -213,11 +220,97 @@ test "the history marks today done once checked on the detail"
   clock data
   expect tree has "day-2026-03-14"
   expect tree has "day-2026-02-15"
+  expect tree missing "future-2026-03-14"
   expect state days.27.done == false
   tap "detail-check"
   clock data
   expect state days.27.done == true
   expect text "detail-streak" == "Current Streak1day in a row"
+
+test "midweek, the days after today are blank cells that keep the grid aligned"
+  epoch "2026-03-11T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  expect tree has "day-2026-02-15"
+  expect tree has "day-2026-03-11"
+  expect tree has "future-2026-03-12"
+  expect tree has "future-2026-03-14"
+  expect tree missing "day-2026-03-12"
+  expect tree missing "day-2026-03-14"
+  expect state days.27.future == true
+  expect state days.24.future == false
+  expect state days.27.done == false
+
+test "tapping a past day logs it, in step with the totals and the streak; tapping again clears it"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  tap "day-2026-03-12"
+  clock data
+  expect state days.25.done == true
+  expect text "detail-total" == "1 day"
+  expect text "detail-best" == "1 day"
+  expect text "detail-streak" == "Current Streak0days in a row"
+  tap "day-2026-03-13"
+  clock data
+  expect text "detail-total" == "2 days"
+  expect text "detail-streak" == "Current Streak2days in a row"
+  tap "day-2026-03-14"
+  clock data
+  expect state days.27.done == true
+  expect state habits.0.doneToday == true
+  expect text "detail-streak" == "Current Streak3days in a row"
+  tap "day-2026-03-13"
+  clock data
+  expect state days.26.done == false
+  expect text "detail-total" == "2 days"
+  expect text "detail-streak" == "Current Streak1day in a row"
+  tap "day-2026-03-14"
+  clock data
+  expect state habits.0.doneToday == false
+  expect text "detail-total" == "1 day"
+
+test "today's cell, the Done Today switch and the history stay in step"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  tap "day-2026-03-13"
+  clock data
+  tap "day-2026-03-14"
+  clock data
+  tap "detail-check"
+  clock data
+  tap "detail-check"
+  clock data
+  expect state days.27.done == true
+  expect text "detail-streak" == "Current Streak2days in a row"
 
 test "an id that names nothing says Not Found, and Back returns to Today"
   clock data
@@ -225,6 +318,7 @@ test "an id that names nothing says Not Found, and Back returns to Today"
   clock settle
   clock data
   expect text "detail-title" == "Not Found"
+  expect tree missing "habit-menu"
   expect tree has "missing-back"
   tap "missing-back"
   clock settle
@@ -247,3 +341,124 @@ test "the row's link says the habit and its streak to a screen reader"
   clock settle
   clock data
   expect text "detail-title" == "Read"
+
+test "tapping a suggestion on an empty Today adds that habit at once"
+  clock data
+  tap "quick-Read"
+  clock data
+  clock settle
+  expect text "name-1" == "Read"
+  expect text "progress" == "0 of 1 done"
+  expect tree missing "quick-Read"
+  expect tree missing "empty-add"
+
+test "a suggestion with a space in its name adds too"
+  clock data
+  tap "quick-Drink Water"
+  clock data
+  clock settle
+  expect text "name-1" == "Drink Water"
+
+test "a suggestion in the add sheet fills the name without saving; once saved it is no longer offered"
+  clock data
+  tap "empty-add"
+  clock settle
+  expect tree has "suggest-Stretch"
+  expect tree has "suggest-Read"
+  tap "suggest-Stretch"
+  expect state draftName == "Stretch"
+  expect enabled "add-save"
+  expect tree has "add-name"
+  tap "add-save"
+  clock data
+  clock settle
+  expect text "name-1" == "Stretch"
+  tap "add-habit"
+  clock settle
+  expect tree has "suggest-Read"
+  expect tree missing "suggest-Stretch"
+  tap "add-cancel"
+  clock settle
+
+test "a suggestion is hidden when a habit has the name in any case"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "add-habit"
+  clock settle
+  expect tree missing "suggest-Read"
+  expect tree has "suggest-Walk"
+  tap "add-cancel"
+  clock settle
+
+test "the pickers choose an icon and a colour; the row shows them; reopening resets them"
+  clock data
+  tap "empty-add"
+  clock settle
+  expect state draftIcon == "sparkles"
+  expect state draftColor == "orange"
+  tap "icon-picker"
+  tap "icon-book"
+  tap "color-picker"
+  tap "color-blue"
+  expect state draftIcon == "book"
+  expect state draftColor == "blue"
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  expect tree has "icon-1"
+  expect state habits.0.icon == "book"
+  expect state habits.0.color == "blue"
+  tap "add-habit"
+  clock settle
+  expect state draftIcon == "sparkles"
+  expect state draftColor == "orange"
+  tap "add-cancel"
+  clock settle
+
+test "a duplicate refused keeps the picked icon and colour; a suggestion sets its icon"
+  clock data
+  tap "quick-Read"
+  clock data
+  clock settle
+  expect state habits.0.icon == "book"
+  expect state habits.0.color == "orange"
+  tap "add-habit"
+  clock settle
+  tap "icon-picker"
+  tap "icon-star"
+  tap "color-picker"
+  tap "color-teal"
+  type "add-name" "read"
+  tap "add-save"
+  clock data
+  expect text "add-error" == "A habit called Read already exists."
+  expect state draftIcon == "star"
+  expect state draftColor == "teal"
+  tap "suggest-Meditate"
+  expect state draftIcon == "moon"
+  expect state draftColor == "teal"
+  tap "add-cancel"
+  clock settle
+
+test "quick-adding a suggestion stores its icon with the default colour"
+  clock data
+  tap "quick-Stretch"
+  clock data
+  clock settle
+  expect state habits.0.icon == "running"
+  expect state habits.0.color == "orange"
+
+test "the habit screen shows the habit's icon"
+  clock data
+  tap "quick-Meditate"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  expect tree has "detail-icon"
