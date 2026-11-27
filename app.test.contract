@@ -1,6 +1,9 @@
 test "no habits shows the empty state; its button opens the add sheet and Cancel closes it"
   clock data
   expect tree has "empty-add"
+  expect tree has "quick-Read"
+  expect tree has "quick-Drink Water"
+  expect tree has "quick-Journal"
   expect tree missing "progress"
   expect tree missing "progress-bar"
   tap "empty-add"
@@ -338,3 +341,56 @@ test "the row's link says the habit and its streak to a screen reader"
   clock settle
   clock data
   expect text "detail-title" == "Read"
+
+test "tapping a suggestion on an empty Today adds that habit at once"
+  clock data
+  tap "quick-Read"
+  clock data
+  clock settle
+  expect text "name-1" == "Read"
+  expect text "progress" == "0 of 1 done"
+  expect tree missing "quick-Read"
+  expect tree missing "empty-add"
+
+test "a suggestion with a space in its name adds too"
+  clock data
+  tap "quick-Drink Water"
+  clock data
+  clock settle
+  expect text "name-1" == "Drink Water"
+
+test "a suggestion in the add sheet fills the name without saving; once saved it is no longer offered"
+  clock data
+  tap "empty-add"
+  clock settle
+  expect tree has "suggest-Stretch"
+  expect tree has "suggest-Read"
+  tap "suggest-Stretch"
+  expect state draftName == "Stretch"
+  expect enabled "add-save"
+  expect tree has "add-name"
+  tap "add-save"
+  clock data
+  clock settle
+  expect text "name-1" == "Stretch"
+  tap "add-habit"
+  clock settle
+  expect tree has "suggest-Read"
+  expect tree missing "suggest-Stretch"
+  tap "add-cancel"
+  clock settle
+
+test "a suggestion is hidden when a habit has the name in any case"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "add-habit"
+  clock settle
+  expect tree missing "suggest-Read"
+  expect tree has "suggest-Walk"
+  tap "add-cancel"
+  clock settle
