@@ -1,0 +1,107 @@
+name: ai-review-learn
+
+# Weekly learning loop for the AI review (REVIEW.md "Learning loop and evals").
+# 1. collect (no key): reads PRs merged in the last 30 days: every AI finding thread (hidden marker) with its outcome
+#    (resolved, outdated by a code change, 👍, 👎, replies) and the inline comments people wrote that the AI did not cover.
+#    The run summary shows acceptance per category, so the quality trend is visible.
+# 2. propose (key, read-only tools): returns edits to the Lessons block of REVIEW.md as data.
+# 3. apply (no key, no model): applies the edits to that block only, then opens a PR. A person reviews it; add the
+#    label `ai-review-eval-request` to measure it first and merge only if the eval does not regress.
+# Runs on the default branch. Nothing here writes to main.
+# The PR step needs Settings -> Actions -> General -> "Allow GitHub Actions to create and approve pull requests".
+# Without it the job pushes the branch and opens an issue with the compare link.
+on:
+  schedule:
+    - cron: '0 0 * * 1' # Monday 00:00 UTC (09:00 KST)
+  workflow_dispatch:
+
+concurrency:
+  group: ai-review-learn
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      count: ${{ steps.collect.outputs.count }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - id: collect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: python3 .github/review/learn.py collect --out .review-learn
+      - uses: actions/upload-artifact@v7
+        with:
+          name: feedback
+          path: .review-learn/feedback.json
+          if-no-files-found: error
+          retention-days: 14
+
+  propose:
+    needs: collect
+    if: needs.collect.outputs.count != '0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          name: feedback
+          path: .review-learn
+      - name: Install Claude Code CLI
+        working-directory: ${{ runner.temp }}
+        run: npm install -g @anthropic-ai/claude-code >/dev/null
+      - name: Propose lessons
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: python3 .github/review/learn.py propose --feedback .review-learn/feedback.json --out "$RUNNER_TEMP/proposal.json"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: proposal
+          path: ${{ runner.temp }}/proposal.json
+          if-no-files-found: error
+          retention-days: 14
+
+  apply:
+    needs: propose
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v8
+        with:
+          name: proposal
+          path: ${{ runner.temp }}/proposal
+      - name: Apply the edits
+        run: python3 .github/review/learn.py apply --proposal "$RUNNER_TEMP/proposal/proposal.json"
+      - name: Open the proposal
+        if: hashFiles('.review-learn/title.txt') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="ai-review-learn/$(date -u +%Y%m%d)"
+          git switch -c "$branch"
+          git add REVIEW.md
+          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" commit -q -m "$(cat .review-learn/title.txt)"
+          git push -q origin "$branch"
+          if ! gh pr create --base "${{ github.event.repository.default_branch }}" --head "$branch" --title "$(cat .review-learn/title.txt)" --body-file .review-learn/body.md; then
+            gh issue create --title "$(cat .review-learn/title.txt)" --body "Branch \`$branch\` holds the proposal; the workflow could not open a PR (enable Actions to create PRs in Settings). Compare: https://github.com/${GITHUB_REPOSITORY}/compare/${{ github.event.repository.default_branch }}...$branch"
+          fi
