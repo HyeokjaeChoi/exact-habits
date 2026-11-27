@@ -2,6 +2,7 @@ test "no habits shows the empty state; its button opens the add sheet and Cancel
   clock data
   expect tree has "empty-add"
   expect tree missing "progress"
+  expect tree missing "progress-bar"
   tap "empty-add"
   clock settle
   expect tree has "add-name"
@@ -25,6 +26,7 @@ test "a name is required; adding Read shows the row, its progress and no streak"
   expect tree missing "add-name"
   expect text "name-1" == "Read"
   expect text "progress" == "0 of 1 done"
+  expect tree has "progress-bar"
   expect text "streak-1" == "No streak"
   expect tree missing "empty-add"
 

@@ -1,7 +1,7 @@
 // Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
 // SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
 // keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
-use DoneMark, EmptyState, RingProgress from "exact:content"
+use DoneMark, EmptyState from "exact:content"
 
 routes nav
   today "/"
@@ -87,7 +87,6 @@ component Habits
       nav = back(nav)
 
   derive fraction = habits.length == 0 ? 0 : doneCount / habits.length
-  derive percent = `${round(fraction * 100)}%`
   action reload
     refresh habits
 
@@ -113,10 +112,10 @@ component Habits
               list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 if habits.length > 0
                   section
-                    // A focal ring over its count, centred: side by side, a Mac sidebar squeezed the text to a letter a line.
-                    column align-items="center" gap=8 padding-top=12 padding-bottom=12
-                      RingProgress(label="Done Today", value=percent, fraction=fraction, tint=none)
+                    // One line over a thin native bar, stacked: side by side, a Mac sidebar squeezed the text to a letter a line.
+                    column gap=6
                       text `${doneCount} of ${habits.length} done` color="-exact-secondary-label" testId="progress"
+                      progress value=fraction aria-label="Today’s progress" testId="progress-bar"
                 section
                   for h in habits key=h.id
                     row delete=remove(h.id)
