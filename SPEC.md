@@ -45,7 +45,7 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `No streak`, `1-day 
 - `app`: the `main`.
 - `add-habit`: the header's add button (symbol, `aria-label="Add Habit"`).
 - `today-date`: the date under the title, `formatDate(shown, time.utcOffset, "medium")`, e.g. `Mar 14, 2026`.
-- `progress`: text `<done> of <total> done`, e.g. `1 of 3 done`; shown only when there is at least one habit. Beside it a `RingProgress` of the same fraction.
+- `progress`: text `<done> of <total> done`, e.g. `1 of 3 done`; shown only when there is at least one habit. Under it, a native determinate `progress` bar (testId `progress-bar`, accessible name "Today’s progress") filled `done / total`; shown and hidden with the text.
 - `empty-add`: the `EmptyState`'s button when there are no habits (title `No Habits`).
 - Per habit `h`, a row holding:
   - `check-<id>`: a checkbox for today, `checked=h.doneToday change=toggle(h.id)`, `aria-label` the habit's name.
