@@ -38,8 +38,8 @@ Streak rules:
 
 ## Screens and testIds
 
-Text formats come from the seam's `fn`s: `streakText(n)` is `No streak`, `1-day streak`,
-`5-day streak`; `dayCount(n)` is `1 day`, `5 days`.
+Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
+`5-day streak` (the view never shows it at 0); `dayCount(n)` is `1 day`, `5 days`.
 
 **Today** (route `today`, `/`)
 - `app`: the `main`.
@@ -49,9 +49,9 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `No streak`, `1-day 
 - `empty-add`: the `EmptyState`'s button when there are no habits (title `No Habits`).
 - Per habit `h`, a row holding:
   - `check-<id>`: a checkbox for today, `checked=h.doneToday change=toggle(h.id)`, `aria-label` the habit's name.
-  - `name-<id>`: the name.
-  - `streak-<id>`: `streakText(h.streak)`.
-  - `open-<id>`: a link to `path("habit", h.id)` (chevron symbol), `aria-label` `Details for <name>`.
+  - `name-<id>`: the name; struck through and in the secondary label colour while `h.doneToday`, normal otherwise.
+  - `streak-<id>`: present only when `h.streak >= 1`: a wrapper of a `Badge` (`exact:content`) reading `streakText(h.streak)`, between the name and the chevron. Absent (no node, no text) at streak 0.
+  - `open-<id>`: a link to `path("habit", h.id)` (chevron symbol), `aria-label` `Details for <name>`, or `Details for <name>, <N>-day streak` when the streak is at least one day.
   - The row swipes to delete (`delete=remove(h.id)`) without asking.
 
 **Habit** (route `habit`, `/habit/:id`)
