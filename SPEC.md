@@ -38,25 +38,26 @@ Streak rules:
 
 ## Screens and testIds
 
-Text formats come from the seam's `fn`s: `streakText(n)` is `No streak`, `1-day streak`,
-`5-day streak`; `dayCount(n)` is `1 day`, `5 days`.
+Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
+`5-day streak` (the view never shows it at 0); `dayCount(n)` is `1 day`, `5 days`.
 
 **Today** (route `today`, `/`)
 - `app`: the `main`.
 - `add-habit`: the header's add button (symbol, `aria-label="Add Habit"`).
 - `today-date`: the date under the title, `formatDate(shown, time.utcOffset, "medium")`, e.g. `Mar 14, 2026`.
-- `progress`: text `<done> of <total> done`, e.g. `1 of 3 done`; shown only when there is at least one habit. Beside it a `RingProgress` of the same fraction.
+- `progress`: text `<done> of <total> done`, e.g. `1 of 3 done`; shown only when there is at least one habit. Under it, a native determinate `progress` bar (testId `progress-bar`, accessible name "Today’s progress") filled `done / total`; shown and hidden with the text.
 - `empty-add`: the `EmptyState`'s button when there are no habits (title `No Habits`).
 - Per habit `h`, a row holding:
   - `check-<id>`: a checkbox for today, `checked=h.doneToday change=toggle(h.id)`, `aria-label` the habit's name.
-  - `name-<id>`: the name.
-  - `streak-<id>`: `streakText(h.streak)`.
-  - `open-<id>`: a link to `path("habit", h.id)` (chevron symbol), `aria-label` `Details for <name>`.
+  - `name-<id>`: the name; struck through and in the secondary label colour while `h.doneToday`, normal otherwise.
+  - `streak-<id>`: present only when `h.streak >= 1`: a wrapper of a `Badge` (`exact:content`) reading `streakText(h.streak)`, between the name and the chevron. Absent (no node, no text) at streak 0.
+  - `open-<id>`: a link to `path("habit", h.id)` (chevron symbol), `aria-label` `Details for <name>`, or `Details for <name>, <N>-day streak` when the streak is at least one day.
   - The row swipes to delete (`delete=remove(h.id)`) without asking.
 
 **Habit** (route `habit`, `/habit/:id`)
 - `detail-title`: the heading, the habit's name, or `Not Found` once loaded and the id names nothing.
-- `detail-streak`, `detail-best`, `detail-total`: `dayCount` of each.
+- `detail-streak`: wraps the first section's `SummaryCard` (`exact:content`, in a transparent section, centred, at most `26.25rem` wide): label `Current Streak`, value `h.streak` as a number, detail `day in a row` when the streak is 1 and `days in a row` otherwise, progress `min(1, streak / best)` when `best > 0` (absent when `best == 0`). A text read of `detail-streak` joins the three texts without separators, e.g. `Current Streak2days in a row`. There is no `Streak` row.
+- `detail-best`, `detail-total`: `dayCount` of each, rows in the section under the `Done Today` switch.
 - `detail-check`: a switch for today, same `toggle(h.id)`.
 - `history`: the last 28 days (`days`), seven to a row, oldest first; each day `day-<YYYY-MM-DD>` showing done or not (`DoneMark` from `exact:content`).
 - `delete-habit`: a destructive button, `askRemove(h.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.

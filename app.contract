@@ -1,7 +1,7 @@
 // Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
 // SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
 // keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
-use DoneMark, EmptyState, RingProgress from "exact:content"
+use Badge, DoneMark, EmptyState, SummaryCard from "exact:content"
 
 routes nav
   today "/"
@@ -30,6 +30,7 @@ shape Reply
 
 fn dayCount(n: number): string = n == 1 ? "1 day" : `${n} days`
 fn streakText(n: number): string = n == 0 ? "No streak" : `${n}-day streak`
+fn rowLabel(h: Habit): string = h.streak > 0 ? `Details for ${h.name}, ${streakText(h.streak)}` : `Details for ${h.name}`
 fn nameOf(hs: Habit[], id: string): string = match first(hs.filter(h => h.id == id)) { case some(h) => h.name, case none => "" }
 fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
 
@@ -87,7 +88,6 @@ component Habits
       nav = back(nav)
 
   derive fraction = habits.length == 0 ? 0 : doneCount / habits.length
-  derive percent = `${round(fraction * 100)}%`
   action reload
     refresh habits
 
@@ -113,20 +113,22 @@ component Habits
               list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 if habits.length > 0
                   section
-                    // A focal ring over its count, centred: side by side, a Mac sidebar squeezed the text to a letter a line.
-                    column align-items="center" gap=8 padding-top=12 padding-bottom=12
-                      RingProgress(label="Done Today", value=percent, fraction=fraction, tint=none)
+                    // One line over a thin native bar, stacked: side by side, a Mac sidebar squeezed the text to a letter a line.
+                    column gap=6
                       text `${doneCount} of ${habits.length} done` color="-exact-secondary-label" testId="progress"
+                      progress value=fraction aria-label="Today’s progress" testId="progress-bar"
                 section
                   for h in habits key=h.id
                     row delete=remove(h.id)
                       input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
                       // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
-                      link href=path("habit", h.id) aria-label=`Details for ${h.name}` testId=`open-${h.id}`
-                        flex=1 min-width=0 min-height=44 display="flex" align-items="center" gap=8
-                        column flex=1 min-width=0
-                          text h.name testId=`name-${h.id}`
-                          text streakText(h.streak) font="-exact-footnote" color="-exact-secondary-label" testId=`streak-${h.id}`
+                      // Done is the checkbox's to say; the strike-through is decoration. The streak reaches a screen reader through the link's label.
+                      link href=path("habit", h.id) aria-label=rowLabel(h) testId=`open-${h.id}`
+                        flex=1 min-width=0 min-height=44 display="flex" flex-wrap="wrap" align-items="center" gap=8
+                        text h.name flex=1 text-decoration=(h.doneToday ? "line-through" : "none") color=(h.doneToday ? "-exact-secondary-label" : "-exact-label") testId=`name-${h.id}`
+                        if h.streak > 0
+                          view testId=`streak-${h.id}`
+                            Badge(label=streakText(h.streak), tint=some("-exact-system-orange"))
                         image "symbol:forward-chevron" aria-hidden=true
         if e.name == "habit"
           column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"
@@ -135,14 +137,16 @@ component Habits
             if found(habits, e.params.id) or pending(habits)
               list id="habit-detail" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 for h in habits.filter(x => x.id == e.params.id) key=h.id
+                  // The hero: the current streak over its progress toward the best, in a transparent section so the part's own fill shows, centred and at most a phone wide.
+                  section background-color="transparent"
+                    row
+                      column flex=1 min-width=0 max-width="26.25rem" margin-left="auto" margin-right="auto" testId="detail-streak"
+                        SummaryCard(label="Current Streak", value=`${h.streak}`, detail=(h.streak == 1 ? "day in a row" : "days in a row"), progress=(h.best > 0 ? some(min(1, h.streak / h.best)) : none), symbol=none)
                   section
                     row
                       text "Done Today" flex=1
                       input type="checkbox" switch checked=h.doneToday change=toggle(h.id) aria-label="Done Today" testId="detail-check"
                   section
-                    row
-                      text "Streak" flex=1
-                      text dayCount(h.streak) testId="detail-streak"
                     row
                       text "Best" flex=1
                       text dayCount(h.best) testId="detail-best"

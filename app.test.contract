@@ -2,6 +2,7 @@ test "no habits shows the empty state; its button opens the add sheet and Cancel
   clock data
   expect tree has "empty-add"
   expect tree missing "progress"
+  expect tree missing "progress-bar"
   tap "empty-add"
   clock settle
   expect tree has "add-name"
@@ -25,7 +26,8 @@ test "a name is required; adding Read shows the row, its progress and no streak"
   expect tree missing "add-name"
   expect text "name-1" == "Read"
   expect text "progress" == "0 of 1 done"
-  expect text "streak-1" == "No streak"
+  expect tree has "progress-bar"
+  expect tree missing "streak-1"
   expect tree missing "empty-add"
 
 test "a duplicate name is refused, case-insensitively, and the sheet stays open"
@@ -58,6 +60,7 @@ test "checking today starts a streak, survives a reload, and unchecking clears i
   tap "add-save"
   clock data
   clock settle
+  expect tree missing "streak-1"
   tap "check-1"
   clock data
   expect text "streak-1" == "1-day streak"
@@ -70,7 +73,7 @@ test "checking today starts a streak, survives a reload, and unchecking clears i
   tap "check-1"
   clock data
   expect state habits.0.doneToday == false
-  expect text "streak-1" == "No streak"
+  expect tree missing "streak-1"
   expect text "progress" == "0 of 1 done"
 
 test "a streak stays alive a day, grows, then breaks after a missed day"
@@ -99,13 +102,56 @@ test "a streak stays alive a day, grows, then breaks after a missed day"
   clock +172800000
   clock data
   expect text "today-date" == "Mar 17, 2026"
-  expect text "streak-1" == "No streak"
+  expect tree missing "streak-1"
   tap "open-1"
   clock settle
   clock data
   expect text "detail-best" == "2 days"
   expect text "detail-total" == "2 days"
-  expect text "detail-streak" == "0 days"
+  expect text "detail-streak" == "Current Streak0days in a row"
+
+test "the streak card reads the current streak, in step with checking and unchecking"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  clock +172800000
+  clock data
+  tap "check-1"
+  clock data
+  clock +86400000
+  clock data
+  tap "check-1"
+  clock data
+  tap "open-1"
+  clock settle
+  clock data
+  expect state habits.0.streak == 2
+  expect state habits.0.best == 3
+  expect text "detail-streak" == "Current Streak2days in a row"
+  expect text "detail-best" == "3 days"
+  expect text "detail-total" == "5 days"
+  tap "detail-check"
+  clock data
+  expect text "detail-streak" == "Current Streak1day in a row"
+  tap "detail-check"
+  clock data
+  expect text "detail-streak" == "Current Streak2days in a row"
 
 test "the day turns over at local midnight"
   epoch "2026-03-15T06:58:00Z"
@@ -171,7 +217,7 @@ test "the history marks today done once checked on the detail"
   tap "detail-check"
   clock data
   expect state days.27.done == true
-  expect text "detail-streak" == "1 day"
+  expect text "detail-streak" == "Current Streak1day in a row"
 
 test "an id that names nothing says Not Found, and Back returns to Today"
   clock data
@@ -184,3 +230,20 @@ test "an id that names nothing says Not Found, and Back returns to Today"
   clock settle
   expect tree has "add-habit"
   expect tree missing "missing-back"
+
+test "the row's link says the habit and its streak to a screen reader"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "check-1"
+  clock data
+  tap "Details for Read, 1-day streak"
+  clock settle
+  clock data
+  expect text "detail-title" == "Read"
