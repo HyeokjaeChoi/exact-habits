@@ -30,9 +30,28 @@ Rules:
 | Layer | Place | Holds |
 |---|---|---|
 | UI | `*.contract` | Views. They call sources through the seam. They import no TypeScript. |
-| entry | `app.ts` | `answer` and `grants`. Exact loads this file. |
+| entry file (one per app) | `app.ts` | `answer` dispatches each source name to its function. `grants` declares the storage and network that the data module may use. Exact loads only this file. |
 | domain | `domain/` | Pure logic: streak math, calendar days. |
 | data | `data/` | SQLite: schema, migration, queries. |
+
+`app.ts` is not a layer of its own. It is one entry file. Features split their code into `domain/` and `data/` files, and `app.ts` imports them.
+
+How one request flows:
+
+1. A view declares `resource habits = loadHabits(today)`, or an action runs `send checked = setDone(…)`.
+2. The Exact runtime calls `answer("setDone", args, …)` in `app.ts`.
+3. `answer` calls `sources.setDone`. That function writes SQLite and returns a `Reply`.
+4. The mutation line `checked … refreshes habits, days` makes the runtime call `loadHabits` and `loadDays` again.
+5. The view renders again from the new resource values.
+
+Android comparison:
+
+| Exact | Android |
+|---|---|
+| `app.contract` routes and root component | Activity and `NavHost` (Navigation Compose) |
+| `resource` / `mutation` lines | ViewModel state that calls a repository |
+| `answer` in `app.ts` | The call from a ViewModel to a repository, wired by Exact |
+| `grants` in `app.ts` | `<uses-permission>` in the manifest, for the data module only |
 
 Rules:
 
