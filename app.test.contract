@@ -184,11 +184,15 @@ test "a habit opens its detail; delete asks, Cancel keeps it, Delete returns to 
   tap "open-1"
   clock settle
   expect text "detail-title" == "Read"
+  tap "habit-menu"
+  clock settle
   tap "delete-habit"
   clock settle
   tap "remove-cancel"
   clock settle
   expect text "detail-title" == "Read"
+  tap "habit-menu"
+  clock settle
   tap "delete-habit"
   clock settle
   tap "remove-confirm"
@@ -311,6 +315,7 @@ test "an id that names nothing says Not Found, and Back returns to Today"
   clock settle
   clock data
   expect text "detail-title" == "Not Found"
+  expect tree missing "habit-menu"
   expect tree has "missing-back"
   tap "missing-back"
   clock settle

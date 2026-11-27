@@ -137,8 +137,15 @@ component Habits
                         image "symbol:forward-chevron" aria-hidden=true
         if e.name == "habit"
           column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"
-            header display="flex" align-items="center"
+            header display="flex" align-items="center" justify-content="space-between"
               text (found(habits, e.params.id) or pending(habits) ? nameOf(habits, e.params.id) : "Not Found") role="heading" aria-level=2 testId="detail-title"
+              if found(habits, e.params.id)
+                button popovertarget="habit-menu" aria-label="More" testId="habit-menu"
+                  image "symbol:more"
+            if found(habits, e.params.id)
+              column id="habit-menu" popover="auto" role="menu" aria-label="Habit"
+                button press=askRemove(e.params.id) destructive=true popovertarget="habit-menu" popovertargetaction="hide" testId="delete-habit"
+                  text "Delete Habit"
             if found(habits, e.params.id) or pending(habits)
               list id="habit-detail" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 for h in habits.filter(x => x.id == e.params.id) key=h.id
@@ -160,7 +167,7 @@ component Habits
                       text dayCount(h.total) testId="detail-total"
                   section
                     header
-                      text "Last 28 Days"
+                      text "Last 4 Weeks"
                     row padding-top=8 padding-bottom=8 testId="history"
                       column flex=1 min-width=0 gap=8
                         row aria-hidden=true
@@ -176,9 +183,6 @@ component Habits
                                 view flex=1 min-width=0 border-radius=8 background-color=(d.day == today ? "-exact-tertiary-fill" : "transparent")
                                   button press=toggleDay(e.params.id, d.day, not d.done) width="100%" min-height=44 aria-current=(d.day == today ? "date" : "") aria-label=dayLabel(d) testId=`day-${d.day}`
                                     DoneMark(caption=dayOfMonth(d.day), done=d.done)
-                  section
-                    button press=askRemove(h.id) destructive=true testId="delete-habit"
-                      text "Delete Habit"
             else
               EmptyState(symbol="symbol:alert", title="No Such Habit", message="It may have been deleted.")
                 button press=back buttonStyle="filled" testId="missing-back"

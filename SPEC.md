@@ -63,7 +63,8 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
   - `day-<YYYY-MM-DD>`: one button per day up to today, `toggleDay(id, day, not done)`: a `DoneMark` (`exact:content`) captioned with the day of the month (`1`–`31`, no leading zero) and done or not. `aria-label` is `<Mon D>, done` or `<Mon D>, not done` (e.g. `Mar 12, done`); at least 44 pt tall. Tapping checks or unchecks that day; today's cell, `detail-check`, `check-<id>`, Best, Total, the streak card and Today's badge stay in step.
   - Today's cell has `aria-current="date"` and a tertiary-fill rounded tint (on a view around the button).
   - `future-<YYYY-MM-DD>`: an empty, hidden, untappable cell for each day after today, so the grid stays aligned. A day has either `day-…` or `future-…`, never both.
-- `delete-habit`: a destructive button, `askRemove(h.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
+- `habit-menu`: the header's trailing "More" button (`symbol:more`, `aria-label="More"`) opening the menu `Habit` (`popover="auto" role="menu"`: a `UIMenu` bar item on iOS, a menu on macOS, a popover on web). Absent on `Not Found`.
+- `delete-habit`: the menu's one destructive item, `Delete Habit`, `askRemove(e.params.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
 - `missing-back`: on `Not Found`, a button back to Today.
 
 **Add** (route `add`, `/add`, a modal sheet)
