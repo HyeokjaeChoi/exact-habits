@@ -1,8 +1,8 @@
 {
   "note": "Last accepted eval scores. Update it in the PR that changes the review, after the eval passes. null means no baseline yet.",
   "recall": 1,
-  "precision": 0.89,
+  "precision": 1,
   "false_positives_on_clean_cases": 0,
   "cases": 8,
-  "measured": "2026-11-27, PR #18 first eval run, model claude-opus-5-5 xhigh, cost $4.21"
+  "measured": "2026-11-27, PR #18 second eval run (cases hidden from the reviewer), claude-opus-5-5 xhigh, cost $4.26"
 }
