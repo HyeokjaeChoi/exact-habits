@@ -1,0 +1,12 @@
+diff --git a/app.ts b/app.ts
+index 5127220..4e8b90b 100644
+--- a/app.ts
++++ b/app.ts
+@@ -48,7 +48,6 @@ const sources: Sources = {
+     return saved();
+   }),
+   removeHabit: ([id], _store, storage) => use(storage, async db => {
+-    await db.execute('DELETE FROM checkins WHERE habit_id = ?', [id]);
+     await db.execute('DELETE FROM habits WHERE id = ?', [id]);
+     return saved();
+   }),

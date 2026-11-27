@@ -1,0 +1,21 @@
+{
+  "id": "remove-habit-keeps-checkins",
+  "description": "removeHabit stops deleting check-ins, against SPEC.md removeHabit behaviour.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "refactor/12-remove-single-statement",
+  "pr": {
+    "title": "removeHabit: delete with one statement",
+    "body": "removeHabit ran two DELETEs. The habit row is what matters, so only delete that. Fewer round trips."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "app.ts",
+      "kind": "spec",
+      "description": "removeHabit no longer deletes the habit's rows in checkins. SPEC.md says removeHabit deletes the habit and its check-ins; orphaned check-ins stay in the database (and are re-read by loadHabits)."
+    }
+  ]
+}

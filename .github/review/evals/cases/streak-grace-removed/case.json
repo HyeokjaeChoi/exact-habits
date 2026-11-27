@@ -1,0 +1,25 @@
+{
+  "id": "streak-grace-removed",
+  "description": "Streak math changed to drop the 'alive until a whole day is missed' rule, against SPEC.md Streak rules and the existing test.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "fix/9-streak-today-only",
+  "pr": {
+    "title": "Streak: count only runs that include today",
+    "body": "Fixes #9. The streak badge showed a 1-day streak on days when the habit was not done yet. Now the streak counts the run ending today only, so it is 0 until today is checked.\n\nChange: `stats()` starts counting at `today` instead of falling back to yesterday."
+  },
+  "issue": {
+    "number": 9,
+    "title": "Streak badge shows a streak before I have done the habit today",
+    "body": "On the Today screen a habit I did yesterday shows `1-day streak` this morning, before I have checked it. That looks wrong."
+  },
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "streak.ts",
+      "kind": "spec",
+      "description": "stats() no longer keeps the streak alive from yesterday; SPEC.md Streak rules say the streak ends yesterday if yesterday is checked and today is not (a streak stays alive until a whole day is missed). The existing test 'only yesterday keeps the streak alive' now fails and the PR does not touch it."
+    }
+  ]
+}

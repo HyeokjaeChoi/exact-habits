@@ -1,0 +1,13 @@
+diff --git a/app.ts b/app.ts
+index 5127220..0e54766 100644
+--- a/app.ts
++++ b/app.ts
+@@ -36,7 +36,7 @@ const sources: Sources = {
+     return lastDays(today, 28).map(day => ({ day, done: done.has(day) }));
+   }),
+   addHabit: ([name], _store, storage) => use(storage, async db => {
+-    const key = name.toLowerCase(); // JavaScript's Unicode lowercasing, not SQLite's ASCII-only lower().
++    const key = name;
+     const result = await db.execute('INSERT INTO habits (name, name_key) VALUES (?, ?) ON CONFLICT(name_key) DO NOTHING', [name, key]);
+     if (result.changes) return saved();
+     const { rows } = await db.query('SELECT name FROM habits WHERE name_key = ?', [key]);

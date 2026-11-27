@@ -1,0 +1,13 @@
+diff --git a/app.ts b/app.ts
+index 5127220..1c2b4b6 100644
+--- a/app.ts
++++ b/app.ts
+@@ -32,7 +32,7 @@ const sources: Sources = {
+     });
+   }),
+   loadDays: ([id, today], _store, storage) => use(storage, async (db): Promise<Result<'loadDays'>> => {
+-    const done = new Set((await db.query('SELECT day FROM checkins WHERE habit_id = ?', [id])).rows.map(([day]) => String(day)));
++    const done = new Set((await db.query(`SELECT day FROM checkins WHERE habit_id = ${id}`)).rows.map(([day]) => String(day)));
+     return lastDays(today, 28).map(day => ({ day, done: done.has(day) }));
+   }),
+   addHabit: ([name], _store, storage) => use(storage, async db => {

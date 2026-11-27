@@ -1,0 +1,21 @@
+{
+  "id": "day-arithmetic-local-time",
+  "description": "addDays rewritten with local-time milliseconds arithmetic, against the SPEC.md day arithmetic rule.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "refactor/11-simplify-adddays",
+  "pr": {
+    "title": "Simplify addDays",
+    "body": "Replace the `Date.UTC` dance with a plain local date plus `n * 86400000` ms. Shorter and easier to read. Existing tests pass on my machine."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "streak.ts",
+      "kind": "spec",
+      "description": "addDays uses ms ± 86400000 on a local-time Date. SPEC.md says day arithmetic is calendar arithmetic on the key via Date.UTC, never ms ± 86400000 on local time. Across a daylight-saving change (a 23 or 25 hour day) the result skips or repeats a day, which breaks streaks and the 28-day history; it also depends on the machine's time zone."
+    }
+  ]
+}

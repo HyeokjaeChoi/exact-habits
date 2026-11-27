@@ -1,0 +1,175 @@
+name: ai-review-eval
+
+# Measures the AI review. It replays the seeded cases in .github/review/evals/cases/ (a patch on a pinned commit of this
+# repo: bugs the reviewer must catch, clean changes it must leave alone) through the same collect -> review -> verify
+# pipeline as ai-review.yml, then a judge model scores recall, precision and false positives and compares them with
+# evals/thresholds.json and evals/baseline.json.
+#
+# Run it when the review changes (REVIEW.md, .github/review/**, ai-review.yml): add the label `ai-review-eval-request`
+# to the PR, or start it by hand (Actions -> ai-review-eval -> Run workflow). It uses the PR's own review
+# configuration, so the PR is measured with its change. It costs API credit: one review per case.
+# Same credentials rule as ai-review.yml: ANTHROPIC_API_KEY first, CLAUDE_CODE_OAUTH_TOKEN for no-key or quota.
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      effort:
+        description: 'Review effort (empty = config.json)'
+        required: false
+        default: ''
+      cases:
+        description: 'Only these case ids, comma separated (empty = all)'
+        required: false
+        default: ''
+
+concurrency:
+  group: ai-review-eval-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  list:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'ai-review-eval-request' &&
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      cases: ${{ steps.list.outputs.cases }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      # Fails when a case is malformed or its patch no longer applies to its pinned commit.
+      - id: list
+        env:
+          ONLY: ${{ inputs.cases }}
+        run: |
+          ids=$(python3 .github/review/evals/score.py list)
+          if [ -n "$ONLY" ]; then
+            ids=$(jq -c --arg only "$ONLY" '($only | split(",") | map(gsub("^\\s+|\\s+$"; ""))) as $o | map(select(. as $i | $o | index($i)))' <<<"$ids")
+          fi
+          echo "cases=$ids" >> "$GITHUB_OUTPUT"
+          echo "cases: $ids"
+
+  case:
+    needs: list
+    if: needs.list.outputs.cases != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        case: ${{ fromJSON(needs.list.outputs.cases) }}
+    steps:
+      # The review configuration under test (scripts, prompts, REVIEW.md, cases).
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: .eval
+          persist-credentials: false
+      # The code the seeded change is applied to: the pinned commit of the case.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          path: work
+          persist-credentials: false
+      - name: Seed the change
+        env:
+          CASE: ${{ matrix.case }}
+        run: |
+          d=".eval/.github/review/evals/cases/$CASE"
+          base=$(jq -r .base_sha "$d/case.json")
+          git -C work checkout -q "$base"
+          # Only REVIEW.md goes into the tree under review. The scripts run from .eval, and the cases (which hold the
+          # expected findings) must not be readable by the reviewer.
+          cp .eval/REVIEW.md work/REVIEW.md
+          rm -rf work/.github/review
+          git -C work apply "$GITHUB_WORKSPACE/$d/$(jq -r .patch "$d/case.json")"
+          git -C work -c user.name=eval -c user.email=eval@example.invalid commit -q -am "seeded change: $CASE"
+          git -C work log --oneline -2
+      - name: Install Claude Code CLI
+        working-directory: ${{ runner.temp }}
+        run: npm install -g @anthropic-ai/claude-code >/dev/null
+      - name: Collect context
+        working-directory: work
+        run: python3 ../.eval/.github/review/review.py collect --out .review-context --case "../.eval/.github/review/evals/cases/${{ matrix.case }}"
+      - name: Review and verify
+        working-directory: work
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          REVIEW_EFFORT: ${{ inputs.effort }}
+        run: python3 ../.eval/.github/review/review.py run --context .review-context --out "$RUNNER_TEMP/out" --sha "$(git rev-parse HEAD)"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: review-${{ matrix.case }}
+          path: ${{ runner.temp }}/out
+          if-no-files-found: error
+          retention-days: 14
+
+  score:
+    needs: [list, case]
+    if: ${{ !cancelled() && needs.list.result == 'success' && needs.list.outputs.cases != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: review-*
+          path: ${{ runner.temp }}/results
+      - name: Install Claude Code CLI
+        working-directory: ${{ runner.temp }}
+        run: npm install -g @anthropic-ai/claude-code >/dev/null
+      - name: Judge and score
+        id: judge
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          set +e
+          python3 .github/review/evals/score.py judge --results "$RUNNER_TEMP/results" --out "$RUNNER_TEMP/score"
+          rc=$?
+          if [ -f "$RUNNER_TEMP/score/report.md" ]; then
+            cat "$RUNNER_TEMP/score/report.md" >> "$GITHUB_STEP_SUMMARY"
+            echo "has_report=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: eval-scores
+          path: ${{ runner.temp }}/score
+          if-no-files-found: ignore
+          retention-days: 90
+      - name: Comment on the PR
+        if: github.event_name == 'pull_request' && steps.judge.outputs.has_report == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/review/review.py upsert --pr "${{ github.event.pull_request.number }}" --marker "<!-- ai-review-eval -->" --body "$RUNNER_TEMP/score/report.md"
+      - name: Remove the label
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/${{ github.event.pull_request.number }}/labels/ai-review-eval-request" >/dev/null 2>&1 || true
+      - name: Gate
+        run: exit ${{ steps.judge.outputs.rc || 2 }}

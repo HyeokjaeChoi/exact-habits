@@ -1,0 +1,21 @@
+{
+  "id": "seam-action-renamed",
+  "description": "Seam action `toggle` renamed, against the SPEC.md seam (actions are fixed).",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "refactor/14-rename-toggle",
+  "pr": {
+    "title": "Rename action toggle to toggleToday",
+    "body": "`toggle` is vague: it only ever toggles today. Rename it to `toggleToday` and update the two checkbox call sites."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "app.contract",
+      "kind": "seam",
+      "description": "The action `toggle` is part of the seam that SPEC.md fixes ('Seam (do not change)' lists toggle by name). Renaming it breaks the contract other owners (data, tests, the shell) depend on; the PR neither updates SPEC.md nor justifies it."
+    }
+  ]
+}

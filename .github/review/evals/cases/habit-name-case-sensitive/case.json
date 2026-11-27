@@ -1,0 +1,21 @@
+{
+  "id": "habit-name-case-sensitive",
+  "description": "Habit name uniqueness key no longer lowercased, against SPEC.md addHabit (unique case-insensitively).",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "perf/10-skip-lowercase",
+  "pr": {
+    "title": "addHabit: skip the lowercasing, UNIQUE already protects duplicates",
+    "body": "The `name_key` column has a UNIQUE constraint, so lowercasing the name in JS is redundant work. Use the name as the key.\n\nNo behaviour change intended."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": false,
+  "expected": [
+    {
+      "id": "e1",
+      "path": "app.ts",
+      "kind": "spec",
+      "description": "addHabit uses the raw name as name_key, so 'Run' and 'run' are now different habits. SPEC.md requires names to be unique case-insensitively (key stored with JS toLowerCase). The PR claims no behaviour change but changes it."
+    }
+  ]
+}

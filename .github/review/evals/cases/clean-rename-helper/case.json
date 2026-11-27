@@ -1,0 +1,14 @@
+{
+  "id": "clean-rename-helper",
+  "description": "Clean: behaviour-preserving rename of a private helper in app.ts. No finding is expected.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "refactor/16-rename-saved",
+  "pr": {
+    "title": "Rename the private `saved` helper to `accepted`",
+    "body": "The private helper `saved` in the data module returns the success reply for every mutation, so `accepted` reads better. Rename only; no behaviour change."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": true,
+  "expected": []
+}

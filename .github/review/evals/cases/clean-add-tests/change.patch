@@ -1,0 +1,12 @@
+diff --git a/streak.test.ts b/streak.test.ts
+index d8ee492..4a672e6 100644
+--- a/streak.test.ts
++++ b/streak.test.ts
+@@ -32,3 +32,7 @@ test('future days are ignored', () =>
+   expect(stats(['2026-03-15', '2026-03-16', T], T)).toEqual({ doneToday: true, streak: 1, best: 1, total: 1 }));
+ test('duplicates and unordered input count once', () =>
+   expect(stats([T, '2026-03-13', T, '2026-03-13'], T)).toEqual({ doneToday: true, streak: 2, best: 2, total: 2 }));
++
++test('one missed day splits a run and best keeps the longer one', () =>
++  expect(stats(['2026-03-01', '2026-03-02', '2026-03-04'], '2026-03-04')).toEqual({ doneToday: true, streak: 1, best: 2, total: 3 }));
++test('lastDays of one is just today', () => expect(lastDays(T, 1)).toEqual([T]));

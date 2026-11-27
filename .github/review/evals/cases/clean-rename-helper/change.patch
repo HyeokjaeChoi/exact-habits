@@ -1,0 +1,36 @@
+diff --git a/app.ts b/app.ts
+index 5127220..fee085d 100644
+--- a/app.ts
++++ b/app.ts
+@@ -18,7 +18,7 @@ function use<T>(storage: Storage, work: (db: Database) => Promise<T>): Promise<T
+   last = run.catch(() => {});
+   return run;
+ }
+-const saved = (): Result<'addHabit'> => ({ ok: true, error: '' });
++const accepted = (): Result<'addHabit'> => ({ ok: true, error: '' });
+ const sources: Sources = {
+   loadHabits: ([today], _store, storage) => use(storage, async (db): Promise<Result<'loadHabits'>> => {
+     const days = new Map<string, string[]>();
+@@ -38,19 +38,19 @@ const sources: Sources = {
+   addHabit: ([name], _store, storage) => use(storage, async db => {
+     const key = name.toLowerCase(); // JavaScript's Unicode lowercasing, not SQLite's ASCII-only lower().
+     const result = await db.execute('INSERT INTO habits (name, name_key) VALUES (?, ?) ON CONFLICT(name_key) DO NOTHING', [name, key]);
+-    if (result.changes) return saved();
++    if (result.changes) return accepted();
+     const { rows } = await db.query('SELECT name FROM habits WHERE name_key = ?', [key]);
+     return { ok: false, error: `A habit called ${String(rows[0]?.[0] ?? name)} already exists.` };
+   }),
+   setDone: ([id, day, done], _store, storage) => use(storage, async db => {
+     if (done) await db.execute('INSERT OR IGNORE INTO checkins (habit_id, day) VALUES (?, ?)', [id, day]);
+     else await db.execute('DELETE FROM checkins WHERE habit_id = ? AND day = ?', [id, day]);
+-    return saved();
++    return accepted();
+   }),
+   removeHabit: ([id], _store, storage) => use(storage, async db => {
+     await db.execute('DELETE FROM checkins WHERE habit_id = ?', [id]);
+     await db.execute('DELETE FROM habits WHERE id = ?', [id]);
+-    return saved();
++    return accepted();
+   }),
+ };
+ export const answer: Answer = (source, args, store, storage, native) => sources[source](args, store, storage, native);

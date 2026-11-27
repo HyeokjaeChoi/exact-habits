@@ -1,0 +1,14 @@
+{
+  "id": "clean-add-tests",
+  "description": "Clean: adds two correct unit tests to streak.test.ts. No finding is expected.",
+  "base_sha": "05e6750acae7b8bc222c262f18d527ddbddb4039",
+  "branch": "test/15-streak-edge-cases",
+  "pr": {
+    "title": "Add two streak edge case tests",
+    "body": "Adds a test for a one-day gap splitting a run (best keeps the longer run) and for lastDays with n = 1. Test only, no production change."
+  },
+  "issue": null,
+  "patch": "change.patch",
+  "clean": true,
+  "expected": []
+}

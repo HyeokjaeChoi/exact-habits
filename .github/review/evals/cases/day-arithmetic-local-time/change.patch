@@ -1,0 +1,16 @@
+diff --git a/streak.ts b/streak.ts
+index 0a2060a..600935c 100644
+--- a/streak.ts
++++ b/streak.ts
+@@ -1,8 +1,9 @@
+ // Pure streak math on YYYY-MM-DD day keys. No clock, no Exact imports.
+ 
+ export function addDays(day: string, n: number): string {
+-  const [y, m, d] = day.split('-').map(Number);
+-  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
++  const date = new Date(`${day}T00:00:00`);
++  date.setTime(date.getTime() + n * 86400000);
++  return date.toLocaleDateString('en-CA');
+ }
+ 
+ /** The last n days, oldest first, ending at today. */
