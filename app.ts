@@ -1,5 +1,5 @@
 import type { Answer, Database, Result, Sources, Storage } from './app.contract.d.ts';
-import { lastDays, stats } from './streak.ts';
+import { calendarDays, stats } from './streak.ts';
 
 const DB = 'app:/data/habits.db';
 export const grants = `sqlite.open ${DB}`;
@@ -33,7 +33,7 @@ const sources: Sources = {
   }),
   loadDays: ([id, today], _store, storage) => use(storage, async (db): Promise<Result<'loadDays'>> => {
     const done = new Set((await db.query('SELECT day FROM checkins WHERE habit_id = ?', [id])).rows.map(([day]) => String(day)));
-    return lastDays(today, 28).map(day => ({ day, done: done.has(day) }));
+    return calendarDays(today).map(day => ({ day, done: day <= today && done.has(day), future: day > today }));
   }),
   addHabit: ([name], _store, storage) => use(storage, async db => {
     const key = name.toLowerCase(); // JavaScript's Unicode lowercasing, not SQLite's ASCII-only lower().

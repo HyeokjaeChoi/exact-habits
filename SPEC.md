@@ -12,7 +12,7 @@ A daily habit tracker for web, iOS and macOS, built on Exact. Each file has one 
 
 The following in `app.contract` keep their names, arguments and types: the `routes`, the
 `shape`s, the `fn`s, the `resource`/`mutation` lines, and the actions `step`, `back`, `follow`,
-`openAdd`, `editName`, `save`, `afterSave`, `toggle`, `askRemove` and `remove`. The UI may add
+`openAdd`, `editName`, `save`, `afterSave`, `toggle`, `toggleDay`, `askRemove` and `remove`. The UI may add
 state, derives, actions, `fn`s and components of its own.
 
 Sources, as `app.contract.d.ts` declares them:
@@ -20,7 +20,7 @@ Sources, as `app.contract.d.ts` declares them:
 | Source | Args | Result | Behaviour |
 |---|---|---|---|
 | `loadHabits` | `[today]` | `Habit[]` | Every habit, oldest first (by id ascending), with `doneToday`, `streak`, `best`, `total` computed for `today`. |
-| `loadDays` | `[id, today]` | `DayMark[]` | 28 entries, oldest first, the last one `today`: `{day, done}`. Unknown id: 28 entries, all not done. |
+| `loadDays` | `[id, today]` | `DayMark[]` | 28 entries, oldest first: whole weeks from the Sunday three weeks before `today`'s week to that week's Saturday (`calendarDays(today)`): `{day, done, future}`. `future` is `day > today`; a future day is never `done`. Unknown id: 28 entries, all not done. |
 | `addHabit` | `[name]` | `Reply` | Name is already trimmed. Unique case-insensitively (JS `toLowerCase`, stored as a key column with a UNIQUE constraint). Duplicate: `{ok: false, error: "A habit called <existing name> already exists."}`. |
 | `setDone` | `[id, day, done]` | `Reply` | Idempotent: `true` inserts the (id, day) check-in if absent, `false` deletes it. |
 | `removeHabit` | `[id]` | `Reply` | Deletes the habit and its check-ins. |
@@ -59,7 +59,10 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
 - `detail-streak`: wraps the first section's `SummaryCard` (`exact:content`, in a transparent section, centred, at most `26.25rem` wide): label `Current Streak`, value `h.streak` as a number, detail `day in a row` when the streak is 1 and `days in a row` otherwise, progress `min(1, streak / best)` when `best > 0` (absent when `best == 0`). A text read of `detail-streak` joins the three texts without separators, e.g. `Current Streak2days in a row`. There is no `Streak` row.
 - `detail-best`, `detail-total`: `dayCount` of each, rows in the section under the `Done Today` switch.
 - `detail-check`: a switch for today, same `toggle(h.id)`.
-- `history`: the last 28 days (`days`), seven to a row, oldest first; each day `day-<YYYY-MM-DD>` showing done or not (`DoneMark` from `exact:content`).
+- `history`: a four-week calendar over `days`: a header row `S M T W T F S` (hidden from a reader, secondary label colour), then four week rows, Sunday first, the last row the week that holds today; no earlier day can be reached.
+  - `day-<YYYY-MM-DD>`: one button per day up to today, `toggleDay(id, day, not done)`: a `DoneMark` (`exact:content`) captioned with the day of the month (`1`–`31`, no leading zero) and done or not. `aria-label` is `<Mon D>, done` or `<Mon D>, not done` (e.g. `Mar 12, done`); at least 44 pt tall. Tapping checks or unchecks that day; today's cell, `detail-check`, `check-<id>`, Best, Total, the streak card and Today's badge stay in step.
+  - Today's cell has `aria-current="date"` and a tertiary-fill rounded tint (on a view around the button).
+  - `future-<YYYY-MM-DD>`: an empty, hidden, untappable cell for each day after today, so the grid stays aligned. A day has either `day-…` or `future-…`, never both.
 - `delete-habit`: a destructive button, `askRemove(h.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
 - `missing-back`: on `Not Found`, a button back to Today.
 

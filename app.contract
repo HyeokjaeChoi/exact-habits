@@ -23,6 +23,7 @@ shape Habit
 shape DayMark
   day: string
   done: bool
+  future: bool
 
 shape Reply
   ok: bool
@@ -32,6 +33,8 @@ fn dayCount(n: number): string = n == 1 ? "1 day" : `${n} days`
 fn streakText(n: number): string = n == 0 ? "No streak" : `${n}-day streak`
 fn rowLabel(h: Habit): string = h.streak > 0 ? `Details for ${h.name}, ${streakText(h.streak)}` : `Details for ${h.name}`
 fn nameOf(hs: Habit[], id: string): string = match first(hs.filter(h => h.id == id)) { case some(h) => h.name, case none => "" }
+fn dayOfMonth(day: string): string = day.slice(8).startsWith("0") ? day.slice(9) : day.slice(8)
+fn dayLabel(d: DayMark): string = `${formatDate(d.day, 0, "month-day")}, ${d.done ? "done" : "not done"}`
 fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
 
 component Habits
@@ -79,6 +82,8 @@ component Habits
     let at = time.epochAtZero + performanceNow()
     now = performanceNow()
     send checked = setDone(id, formatDate(at, time.utcOffset, "iso"), done)
+  action toggleDay(id: string, day: string, done: bool)
+    send checked = setDone(id, day, done)
   action askRemove(id: string)
     aimed = id
     showModal("remove")
@@ -157,12 +162,20 @@ component Habits
                     header
                       text "Last 28 Days"
                     row padding-top=8 padding-bottom=8 testId="history"
-                      column flex=1 min-width=0 gap=12
+                      column flex=1 min-width=0 gap=8
+                        row aria-hidden=true
+                          for n in ["S", "M", "T", "W", "T", "F", "S"] key=n
+                            text n flex=1 min-width=0 text-align="center" font="-exact-footnote" color="-exact-secondary-label"
                         for w in [0, 1, 2, 3] key=w
-                          row gap=4
+                          row
                             for d in days.slice(w * 7, w * 7 + 7) key=d.day
-                              view flex=1 min-width=0 testId=`day-${d.day}`
-                                DoneMark(caption=d.day.slice(8), done=d.done)
+                              if d.future
+                                view flex=1 min-width=0 aria-hidden=true testId=`future-${d.day}`
+                              else
+                                // Today's tint sits on a view around the button: a radius or fill on the button itself would paint a platform control.
+                                view flex=1 min-width=0 border-radius=8 background-color=(d.day == today ? "-exact-tertiary-fill" : "transparent")
+                                  button press=toggleDay(e.params.id, d.day, not d.done) width="100%" min-height=44 aria-current=(d.day == today ? "date" : "") aria-label=dayLabel(d) testId=`day-${d.day}`
+                                    DoneMark(caption=dayOfMonth(d.day), done=d.done)
                   section
                     button press=askRemove(h.id) destructive=true testId="delete-habit"
                       text "Delete Habit"

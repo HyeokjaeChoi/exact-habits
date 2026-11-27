@@ -213,11 +213,97 @@ test "the history marks today done once checked on the detail"
   clock data
   expect tree has "day-2026-03-14"
   expect tree has "day-2026-02-15"
+  expect tree missing "future-2026-03-14"
   expect state days.27.done == false
   tap "detail-check"
   clock data
   expect state days.27.done == true
   expect text "detail-streak" == "Current Streak1day in a row"
+
+test "midweek, the days after today are blank cells that keep the grid aligned"
+  epoch "2026-03-11T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  expect tree has "day-2026-02-15"
+  expect tree has "day-2026-03-11"
+  expect tree has "future-2026-03-12"
+  expect tree has "future-2026-03-14"
+  expect tree missing "day-2026-03-12"
+  expect tree missing "day-2026-03-14"
+  expect state days.27.future == true
+  expect state days.24.future == false
+  expect state days.27.done == false
+
+test "tapping a past day logs it, in step with the totals and the streak; tapping again clears it"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  tap "day-2026-03-12"
+  clock data
+  expect state days.25.done == true
+  expect text "detail-total" == "1 day"
+  expect text "detail-best" == "1 day"
+  expect text "detail-streak" == "Current Streak0days in a row"
+  tap "day-2026-03-13"
+  clock data
+  expect text "detail-total" == "2 days"
+  expect text "detail-streak" == "Current Streak2days in a row"
+  tap "day-2026-03-14"
+  clock data
+  expect state days.27.done == true
+  expect state habits.0.doneToday == true
+  expect text "detail-streak" == "Current Streak3days in a row"
+  tap "day-2026-03-13"
+  clock data
+  expect state days.26.done == false
+  expect text "detail-total" == "2 days"
+  expect text "detail-streak" == "Current Streak1day in a row"
+  tap "day-2026-03-14"
+  clock data
+  expect state habits.0.doneToday == false
+  expect text "detail-total" == "1 day"
+
+test "today's cell, the Done Today switch and the history stay in step"
+  epoch "2026-03-14T18:00:00Z"
+  time-zone "America/Los_Angeles"
+  clock data
+  tap "empty-add"
+  clock settle
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  clock data
+  tap "day-2026-03-13"
+  clock data
+  tap "day-2026-03-14"
+  clock data
+  tap "detail-check"
+  clock data
+  tap "detail-check"
+  clock data
+  expect state days.27.done == true
+  expect text "detail-streak" == "Current Streak2days in a row"
 
 test "an id that names nothing says Not Found, and Back returns to Today"
   clock data
