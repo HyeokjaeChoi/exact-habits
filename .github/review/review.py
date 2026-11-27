@@ -480,19 +480,24 @@ def commentable_lines(diff):
     return lines
 
 
+def unesc(text):
+    """The model sometimes writes a line break as the two characters backslash and n inside a JSON string."""
+    return (text or "").replace("\\n", "\n")
+
+
 ICON = {"Critical": "[Critical]", "Major": "[Major]", "Minor": "[Minor]"}
 STATUS = {"met": "충족", "partial": "일부 충족", "gap": "미충족", "unknown": "확인 불가"}
 
 
 def inline_body(f):
-    ev = "".join(f"\n- {e}" for e in f.get("evidence", []))
-    src = "".join(f"\n- {s}" for s in f.get("sources", []))
-    body = f"**{ICON[f['severity']]} {f['title']}** ({f['category']})\n\n{f['scenario']}\n"
+    ev = "".join(f"\n- {unesc(e)}" for e in f.get("evidence", []))
+    src = "".join(f"\n- {unesc(s)}" for s in f.get("sources", []))
+    body = f"**{ICON[f['severity']]} {f['title']}** ({f['category']})\n\n{unesc(f['scenario'])}\n"
     if ev:
         body += f"\n근거:{ev}\n"
     if src:
         body += f"\n출처:{src}\n"
-    body += f"\n<sub>검증: {f.get('verifier', '')}</sub>\n\n<sub>도움이 됐다면 👍, 아니면 👎와 이유를 답글로 남겨 주세요. 이 반응은 다음 리뷰 개선에 쓰입니다.</sub>\n"
+    body += f"\n<sub>검증: {unesc(f.get('verifier', ''))}</sub>\n\n<sub>도움이 됐다면 👍, 아니면 👎와 이유를 답글로 남겨 주세요. 이 반응은 다음 리뷰 개선에 쓰입니다.</sub>\n"
     body += f"<!-- ai-finding:{f['fp']} cat={f['category']} sev={f['severity']} -->"
     return redact(body)
 
@@ -517,13 +522,13 @@ def summary_markdown(review, unplaced):
     if unplaced:
         out.append("\n### diff 줄에 붙이지 못한 지적\n")
         for f in unplaced:
-            out.append(f"- `{f['path']}:{f['line']}` **{ICON[f['severity']]} {f['title']}**: {f['scenario']}")
+            out.append(f"- `{f['path']}:{f['line']}` **{ICON[f['severity']]} {f['title']}**: {unesc(f['scenario'])}")
     if r["needs_look"]:
         out.append("\n### 사람이 확인해 볼 점 (검증기가 확정하지 못함)\n")
         for f in r["needs_look"]:
-            out.append(f"- `{f['path']}:{f['line']}` {f['title']}: {f['scenario']} (검증기: {f.get('verifier', '')})")
+            out.append(f"- `{f['path']}:{f['line']}` {f['title']}: {unesc(f['scenario'])} (검증기: {unesc(f.get('verifier', ''))})")
     if r.get("notes"):
-        out.append(f"\n### 메모\n\n{r['notes']}")
+        out.append(f"\n### 메모\n\n{unesc(r['notes'])}")
     if r["context_read"]:
         out.append("\n<details><summary>확인한 맥락</summary>\n\n" + "\n".join(f"- {c}" for c in r["context_read"][:60]) + "\n\n</details>")
     out.append(f"\n<sub>리뷰 모델 {meta.get('model')} (effort {meta.get('effort')}), 검증 effort {meta.get('verifier_effort')}. 비용 약 ${meta.get('cost_usd')}.</sub>")
