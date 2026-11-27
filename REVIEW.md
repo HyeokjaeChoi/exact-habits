@@ -35,6 +35,7 @@ Read beyond the diff: callers, callees and tests of each changed symbol. Report 
 - Style, naming taste, formatting.
 - Anything a type check or an existing test already catches and fails on.
 - Code the PR does not touch, unless the PR makes it worse.
+- `.github/review/evals/`: fixtures with seeded bugs on purpose. Review a change there as an eval case (does the patch apply, does `expected` describe the defect), not as app code.
 
 ## Output
 
