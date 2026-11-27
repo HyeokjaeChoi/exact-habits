@@ -1,0 +1,12 @@
+{
+  "model": "claude-opus-5-5",
+  "effort": "xhigh",
+  "verifier_effort": "high",
+  "judge_effort": "high",
+  "max_turns": 80,
+  "verifier_max_turns": 60,
+  "max_candidates": 15,
+  "history_files": 20,
+  "history_commits_per_file": 8,
+  "history_prs": 8
+}
