@@ -1,7 +1,7 @@
 // Habits: a daily habit tracker. app.ts keeps habits and check-ins in SQLite.
 // SEAM (fixed by SPEC.md): routes, shapes, resources, mutations and the actions below
 // keep their names and signatures. The view is free to change; it must keep SPEC.md's testIds.
-use DoneMark, EmptyState, SummaryCard from "exact:content"
+use Badge, DoneMark, EmptyState, SummaryCard from "exact:content"
 
 routes nav
   today "/"
@@ -30,6 +30,7 @@ shape Reply
 
 fn dayCount(n: number): string = n == 1 ? "1 day" : `${n} days`
 fn streakText(n: number): string = n == 0 ? "No streak" : `${n}-day streak`
+fn rowLabel(h: Habit): string = h.streak > 0 ? `Details for ${h.name}, ${streakText(h.streak)}` : `Details for ${h.name}`
 fn nameOf(hs: Habit[], id: string): string = match first(hs.filter(h => h.id == id)) { case some(h) => h.name, case none => "" }
 fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
 
@@ -121,11 +122,13 @@ component Habits
                     row delete=remove(h.id)
                       input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
                       // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
-                      link href=path("habit", h.id) aria-label=`Details for ${h.name}` testId=`open-${h.id}`
-                        flex=1 min-width=0 min-height=44 display="flex" align-items="center" gap=8
-                        column flex=1 min-width=0
-                          text h.name testId=`name-${h.id}`
-                          text streakText(h.streak) font="-exact-footnote" color="-exact-secondary-label" testId=`streak-${h.id}`
+                      // Done is the checkbox's to say; the strike-through is decoration. The streak reaches a screen reader through the link's label.
+                      link href=path("habit", h.id) aria-label=rowLabel(h) testId=`open-${h.id}`
+                        flex=1 min-width=0 min-height=44 display="flex" flex-wrap="wrap" align-items="center" gap=8
+                        text h.name flex=1 text-decoration=(h.doneToday ? "line-through" : "none") color=(h.doneToday ? "-exact-secondary-label" : "-exact-label") testId=`name-${h.id}`
+                        if h.streak > 0
+                          view testId=`streak-${h.id}`
+                            Badge(label=streakText(h.streak), tint=some("-exact-system-orange"))
                         image "symbol:forward-chevron" aria-hidden=true
         if e.name == "habit"
           column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"

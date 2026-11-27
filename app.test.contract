@@ -27,7 +27,7 @@ test "a name is required; adding Read shows the row, its progress and no streak"
   expect text "name-1" == "Read"
   expect text "progress" == "0 of 1 done"
   expect tree has "progress-bar"
-  expect text "streak-1" == "No streak"
+  expect tree missing "streak-1"
   expect tree missing "empty-add"
 
 test "a duplicate name is refused, case-insensitively, and the sheet stays open"
@@ -60,6 +60,7 @@ test "checking today starts a streak, survives a reload, and unchecking clears i
   tap "add-save"
   clock data
   clock settle
+  expect tree missing "streak-1"
   tap "check-1"
   clock data
   expect text "streak-1" == "1-day streak"
@@ -72,7 +73,7 @@ test "checking today starts a streak, survives a reload, and unchecking clears i
   tap "check-1"
   clock data
   expect state habits.0.doneToday == false
-  expect text "streak-1" == "No streak"
+  expect tree missing "streak-1"
   expect text "progress" == "0 of 1 done"
 
 test "a streak stays alive a day, grows, then breaks after a missed day"
@@ -101,7 +102,7 @@ test "a streak stays alive a day, grows, then breaks after a missed day"
   clock +172800000
   clock data
   expect text "today-date" == "Mar 17, 2026"
-  expect text "streak-1" == "No streak"
+  expect tree missing "streak-1"
   tap "open-1"
   clock settle
   clock data
