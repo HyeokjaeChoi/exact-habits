@@ -394,3 +394,71 @@ test "a suggestion is hidden when a habit has the name in any case"
   expect tree has "suggest-Walk"
   tap "add-cancel"
   clock settle
+
+test "the pickers choose an icon and a colour; the row shows them; reopening resets them"
+  clock data
+  tap "empty-add"
+  clock settle
+  expect state draftIcon == "sparkles"
+  expect state draftColor == "orange"
+  tap "icon-picker"
+  tap "icon-book"
+  tap "color-picker"
+  tap "color-blue"
+  expect state draftIcon == "book"
+  expect state draftColor == "blue"
+  type "add-name" "Read"
+  tap "add-save"
+  clock data
+  clock settle
+  expect tree has "icon-1"
+  expect state habits.0.icon == "book"
+  expect state habits.0.color == "blue"
+  tap "add-habit"
+  clock settle
+  expect state draftIcon == "sparkles"
+  expect state draftColor == "orange"
+  tap "add-cancel"
+  clock settle
+
+test "a duplicate refused keeps the picked icon and colour; a suggestion sets its icon"
+  clock data
+  tap "quick-Read"
+  clock data
+  clock settle
+  expect state habits.0.icon == "book"
+  expect state habits.0.color == "orange"
+  tap "add-habit"
+  clock settle
+  tap "icon-picker"
+  tap "icon-star"
+  tap "color-picker"
+  tap "color-teal"
+  type "add-name" "read"
+  tap "add-save"
+  clock data
+  expect text "add-error" == "A habit called Read already exists."
+  expect state draftIcon == "star"
+  expect state draftColor == "teal"
+  tap "suggest-Meditate"
+  expect state draftIcon == "moon"
+  expect state draftColor == "teal"
+  tap "add-cancel"
+  clock settle
+
+test "quick-adding a suggestion stores its icon with the default colour"
+  clock data
+  tap "quick-Stretch"
+  clock data
+  clock settle
+  expect state habits.0.icon == "running"
+  expect state habits.0.color == "orange"
+
+test "the habit screen shows the habit's icon"
+  clock data
+  tap "quick-Meditate"
+  clock data
+  clock settle
+  tap "open-1"
+  clock settle
+  expect tree has "detail-icon"
