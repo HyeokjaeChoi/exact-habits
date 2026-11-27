@@ -46,7 +46,10 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
 - `add-habit`: the header's add button (symbol, `aria-label="Add Habit"`).
 - `today-date`: the date under the title, `formatDate(shown, time.utcOffset, "medium")`, e.g. `Mar 14, 2026`.
 - `progress`: text `<done> of <total> done`, e.g. `1 of 3 done`; shown only when there is at least one habit. Under it, a native determinate `progress` bar (testId `progress-bar`, accessible name "Today’s progress") filled `done / total`; shown and hidden with the text.
-- `empty-add`: the `EmptyState`'s button when there are no habits (title `No Habits`).
+- With no habits, an `EmptyState` (title `Start a Habit`, message `Pick one to begin, or add your own.`) holds, in its slot, one bordered button per suggestion, then `empty-add` (filled, `Add Habit`), each at least 44 pt tall. A failed load still shows `Can’t Open Habits`.
+  - `quick-<name>`: a suggestion (`Read`, `Drink Water`, `Stretch`, `Meditate`, `Walk`, `Journal`, the view's `suggestions()`), `aria-label` `Add <name>`. Tapping it adds that habit at once (`quickAdd(name)`: `send added = addHabit(name)`, ignored while a save is pending); Today then shows it with `0 of 1 done`. If the save fails the empty state stays and nothing else changes.
+  - `empty-add`: opens the add sheet.
+- In a wide window (the macOS and iPad split) with no habit open, the detail pane shows our own `EmptyState` (`Select a Habit`, `Its streak and history show here.`, a root-route child with `navigationSplit="placeholder"`) in place of the platform's `No Selection`.
 - Per habit `h`, a row holding:
   - `check-<id>`: a checkbox for today, `checked=h.doneToday change=toggle(h.id)`, `aria-label` the habit's name.
   - `name-<id>`: the name; struck through and in the secondary label colour while `h.doneToday`, normal otherwise.
@@ -69,6 +72,7 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
 - `add-cancel`: closes the sheet.
 - `add-error`: the last refusal (`refusal`), red, under the field; absent when empty.
 - `add-hint`: `saveHint` in the section's footer.
+- A second section headed `Suggestions` (hidden when empty) lists `suggestions()` minus the names a habit already has, compared case-insensitively (`taken`), each a row holding `suggest-<name>`, a button with `aria-label` `Use <name>` that sets the name field (`editName(name)`); it does not save.
 
 ## Non-goals (v1)
 

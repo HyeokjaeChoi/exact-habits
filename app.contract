@@ -33,6 +33,8 @@ fn streakText(n: number): string = n == 0 ? "No streak" : `${n}-day streak`
 fn rowLabel(h: Habit): string = h.streak > 0 ? `Details for ${h.name}, ${streakText(h.streak)}` : `Details for ${h.name}`
 fn nameOf(hs: Habit[], id: string): string = match first(hs.filter(h => h.id == id)) { case some(h) => h.name, case none => "" }
 fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
+fn suggestions(): string[] = ["Read", "Drink Water", "Stretch", "Meditate", "Walk", "Journal"]
+fn taken(hs: Habit[], name: string): bool = hs.filter(h => h.name.toLowerCase() == name.toLowerCase()).length > 0
 
 component Habits
   state now = 0
@@ -49,6 +51,7 @@ component Habits
   mutation checked as shape Reply queue refreshes habits, days
   mutation removed as shape Reply refreshes habits
   derive doneCount = habits.filter(h => h.doneToday).length
+  derive offered = suggestions().filter(s => not taken(habits, s))
   derive saveError = match added { case some(r) => r.error, case none => "" }
   derive saveHint = pending(added) ? "Saving…" : draftName.trim() == "" ? "Enter a name to save." : ""
 
@@ -70,6 +73,9 @@ component Habits
   action save
     if draftName.trim() != "" and not pending(added)
       send added = addHabit(draftName.trim())
+  action quickAdd(name: string)
+    if not pending(added)
+      send added = addHabit(name)
   action afterSave
     refusal = saveError
     if saveError == "" and top(nav).name == "add"
@@ -106,9 +112,13 @@ component Habits
                 button press=reload testId="retry"
                   text "Try Again"
             else if habits.length == 0 and not pending(habits)
-              EmptyState(symbol="symbol:sparkles", title="No Habits", message="Add a habit to start a streak.")
-                button press=openAdd buttonStyle="filled" testId="empty-add"
-                  text "Add Habit"
+              EmptyState(symbol="symbol:sparkles", title="Start a Habit", message="Pick one to begin, or add your own.")
+                column gap=8
+                  for s in suggestions() key=s
+                    button press=quickAdd(s) buttonStyle="bordered" min-height=44 aria-label=`Add ${s}` testId=`quick-${s}`
+                      text s
+                  button press=openAdd buttonStyle="filled" min-height=44 testId="empty-add"
+                    text "Add Habit"
             else
               list id="habit-list" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
                 if habits.length > 0
@@ -130,6 +140,9 @@ component Habits
                           view testId=`streak-${h.id}`
                             Badge(label=streakText(h.streak), tint=some("-exact-system-orange"))
                         image "symbol:forward-chevron" aria-hidden=true
+            // The split's detail while no habit is selected (a wide window): ours, not the platform's "No Selection".
+            column navigationSplit="placeholder" min-height=0
+              EmptyState(symbol="symbol:sparkles", title="Select a Habit", message="Its streak and history show here.")
         if e.name == "habit"
           column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"
             header display="flex" align-items="center"
@@ -187,6 +200,14 @@ component Habits
                       text refusal font="-exact-footnote" color="-exact-system-red" testId="add-error"
                 footer
                   text saveHint testId="add-hint"
+              if offered.length > 0
+                section
+                  header
+                    text "Suggestions"
+                  for s in offered key=s
+                    row
+                      button press=editName(s) aria-label=`Use ${s}` testId=`suggest-${s}`
+                        text s
       dialog id="remove" role="alertdialog" aria-label="Delete Habit?"
         text "Its history is deleted too."
         button press=remove(aimed) destructive=true commandfor="remove" command="close" testId="remove-confirm"
