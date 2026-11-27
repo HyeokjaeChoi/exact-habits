@@ -15,6 +15,8 @@ shape Time
 shape Habit
   id: string
   name: string
+  icon: string
+  color: string
   doneToday: bool
   streak: number
   best: number
@@ -37,11 +39,17 @@ fn dayOfMonth(day: string): string = day.slice(8).startsWith("0") ? day.slice(9)
 fn dayLabel(d: DayMark): string = `${formatDate(d.day, 0, "month-day")}, ${d.done ? "done" : "not done"}`
 fn found(hs: Habit[], id: string): bool = hs.filter(h => h.id == id).length > 0
 fn suggestions(): string[] = ["Read", "Drink Water", "Stretch", "Meditate", "Walk", "Journal"]
+fn suggestionIcon(name: string): string = name == "Read" or name == "Journal" ? "book" : name == "Stretch" ? "running" : name == "Meditate" ? "moon" : name == "Walk" ? "walking" : "sparkles"
+fn iconOf(icon: string): string = `symbol:${icon}`
+fn tintOf(c: string): string = `-exact-system-${c}`
+fn titled(s: string): string = `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`
 fn taken(hs: Habit[], name: string): bool = hs.filter(h => h.name.toLowerCase() == name.toLowerCase()).length > 0
 
 component Habits
   state now = 0
   state draftName = ""
+  state draftIcon = "sparkles"
+  state draftColor = "orange"
   state refusal = ""
   state aimed = ""
   resource time = exactTime() as shape Time
@@ -69,16 +77,25 @@ component Habits
     nav = top(nav).name == "habit" and url.startsWith("/habit/") ? replace(nav, url) : go(nav, url)
   action openAdd
     draftName = ""
+    draftIcon = "sparkles"
+    draftColor = "orange"
     refusal = ""
     nav = push(nav, "/add")
   action editName(v: string)
     draftName = v
   action save
     if draftName.trim() != "" and not pending(added)
-      send added = addHabit(draftName.trim())
+      send added = addHabit(draftName.trim(), draftIcon, draftColor)
+  action pickIcon(v: string)
+    draftIcon = v
+  action pickColor(v: string)
+    draftColor = v
+  action useSuggestion(name: string)
+    draftName = name
+    draftIcon = suggestionIcon(name)
   action quickAdd(name: string)
     if not pending(added)
-      send added = addHabit(name)
+      send added = addHabit(name, suggestionIcon(name), "orange")
   action afterSave
     refusal = saveError
     if saveError == "" and top(nav).name == "add"
@@ -140,6 +157,7 @@ component Habits
                       // Done is the checkbox's to say; the strike-through is decoration. The streak reaches a screen reader through the link's label.
                       link href=path("habit", h.id) aria-label=rowLabel(h) testId=`open-${h.id}`
                         flex=1 min-width=0 min-height=44 display="flex" flex-wrap="wrap" align-items="center" gap=8
+                        image iconOf(h.icon) color=tintOf(h.color) width=24 flex-shrink=0 aria-hidden=true testId=`icon-${h.id}`
                         text h.name flex=1 text-decoration=(h.doneToday ? "line-through" : "none") color=(h.doneToday ? "-exact-secondary-label" : "-exact-label") testId=`name-${h.id}`
                         if h.streak > 0
                           view testId=`streak-${h.id}`
@@ -164,6 +182,8 @@ component Habits
                 for h in habits.filter(x => x.id == e.params.id) key=h.id
                   // The hero: the current streak over its progress toward the best, in a transparent section so the part's own fill shows, centred and at most a phone wide.
                   section background-color="transparent"
+                    row justify-content="center"
+                      image iconOf(h.icon) color=tintOf(h.color) font="-exact-large-title" aria-hidden=true testId="detail-icon"
                     row
                       column flex=1 min-width=0 max-width="26.25rem" margin-left="auto" margin-right="auto" testId="detail-streak"
                         SummaryCard(label="Current Streak", value=`${h.streak}`, detail=(h.streak == 1 ? "day in a row" : "days in a row"), progress=(h.best > 0 ? some(min(1, h.streak / h.best)) : none), symbol=none)
@@ -217,14 +237,32 @@ component Habits
                       text refusal font="-exact-footnote" color="-exact-system-red" testId="add-error"
                 footer
                   text saveHint testId="add-hint"
+              section
+                row
+                  text "Icon" flex=1
+                  button popovertarget="icon-menu" aria-label=`Icon, ${titled(draftIcon)}` testId="icon-picker"
+                    image iconOf(draftIcon) color=tintOf(draftColor) aria-hidden=true
+                row
+                  text "Colour" flex=1
+                  button popovertarget="color-menu" aria-label=`Colour, ${titled(draftColor)}` testId="color-picker"
+                    text titled(draftColor) color=tintOf(draftColor)
               if offered.length > 0
                 section
                   header
                     text "Suggestions"
                   for s in offered key=s
                     row
-                      button press=editName(s) aria-label=`Use ${s}` testId=`suggest-${s}`
+                      button press=useSuggestion(s) aria-label=`Use ${s}` testId=`suggest-${s}`
                         text s
+      column id="icon-menu" popover="auto" role="menu" aria-label="Icon"
+        for i in ["sparkles", "book", "running", "walking", "heart", "moon", "star", "timer"] key=i
+          button role="menuitemradio" aria-checked=(draftIcon == i) press=pickIcon(i) popovertarget="icon-menu" popovertargetaction="hide" testId=`icon-${i}`
+            image iconOf(i) aria-hidden=true
+            text titled(i)
+      column id="color-menu" popover="auto" role="menu" aria-label="Colour"
+        for c in ["orange", "red", "green", "blue", "purple", "teal"] key=c
+          button role="menuitemradio" aria-checked=(draftColor == c) press=pickColor(c) popovertarget="color-menu" popovertargetaction="hide" testId=`color-${c}`
+            text titled(c)
       dialog id="remove" role="alertdialog" aria-label="Delete Habit?"
         text "Its history is deleted too."
         button press=remove(aimed) destructive=true commandfor="remove" command="close" testId="remove-confirm"
