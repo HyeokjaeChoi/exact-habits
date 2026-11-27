@@ -114,7 +114,9 @@ jobs:
     # Whatever happened, take the label off so the next request starts a new run. A cancelled run (replaced by a new
     # request) must not remove the new request's label.
     needs: [review, post]
-    if: ${{ !cancelled() }}
+    if: >-
+      ${{ !cancelled() && github.event.label.name == 'ai-review-request' &&
+      github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:

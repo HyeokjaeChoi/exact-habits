@@ -92,8 +92,10 @@ jobs:
           d=".eval/.github/review/evals/cases/$CASE"
           base=$(jq -r .base_sha "$d/case.json")
           git -C work checkout -q "$base"
+          # Only REVIEW.md goes into the tree under review. The scripts run from .eval, and the cases (which hold the
+          # expected findings) must not be readable by the reviewer.
           cp .eval/REVIEW.md work/REVIEW.md
-          rm -rf work/.github/review && mkdir -p work/.github && cp -R .eval/.github/review work/.github/review
+          rm -rf work/.github/review
           git -C work apply "$GITHUB_WORKSPACE/$d/$(jq -r .patch "$d/case.json")"
           git -C work -c user.name=eval -c user.email=eval@example.invalid commit -q -am "seeded change: $CASE"
           git -C work log --oneline -2
