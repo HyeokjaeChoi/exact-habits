@@ -60,7 +60,8 @@ Text formats come from the seam's `fn`s: `streakText(n)` is `1-day streak`,
 - `detail-best`, `detail-total`: `dayCount` of each, rows in the section under the `Done Today` switch.
 - `detail-check`: a switch for today, same `toggle(h.id)`.
 - `history`: the last 28 days (`days`), seven to a row, oldest first; each day `day-<YYYY-MM-DD>` showing done or not (`DoneMark` from `exact:content`).
-- `delete-habit`: a destructive button, `askRemove(h.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
+- `habit-menu`: the header's trailing "More" button (`symbol:more`, `aria-label="More"`) opening the menu `Habit` (`popover="auto" role="menu"`: a `UIMenu` bar item on iOS, a menu on macOS, a popover on web). Absent on `Not Found`.
+- `delete-habit`: the menu's one destructive item, `Delete Habit`, `askRemove(e.params.id)`; the alert `remove` then offers `remove-confirm` and `remove-cancel`. Confirming goes back to Today.
 - `missing-back`: on `Not Found`, a button back to Today.
 
 **Add** (route `add`, `/add`, a modal sheet)
