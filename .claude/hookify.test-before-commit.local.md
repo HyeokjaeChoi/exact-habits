@@ -6,4 +6,4 @@ action: warn
 pattern: git\s+commit
 ---
 
-⚠️ **Before committing:** `bun test` and `bun exact.mjs test web` should pass (and `EXACT_IDENTITY=- bun exact.mjs test macos` for view changes). Skip this only if they ran after the last edit.
+⚠️ **Before committing:** the `pre-commit` hook runs `scripts/gate.sh fast`. `bun exact.mjs test web` runs in the `pre-push` hook. After a view change, run `EXACT_IDENTITY=- bun exact.mjs test macos` also.

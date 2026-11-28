@@ -60,13 +60,17 @@ export PATH="$HOME/.bun-1.4.2/bin:$HOME/.cargo/bin:$PATH" EXACT_FEEDBACK=0
 
 | Check | Command |
 |---|---|
+| Fast gate (each commit) | `scripts/gate.sh fast` |
+| Full gate (each push) | `scripts/gate.sh full` |
 | Unit tests and repo rules | `bun test` |
 | Web tests | `bun exact.mjs test web` |
 | macOS tests | `EXACT_IDENTITY=- bun exact.mjs test macos` |
 | iOS | `EXACT_SIM="<iPhone>" bun exact.mjs verify ios` |
 | Android | `ANDROID_SERIAL=emulator-5554 bun exact.mjs verify android` |
 
-- Before each commit, `bun test` and `bun exact.mjs test web` must pass. After a view change, the macOS tests must pass also.
+- Before each commit, the `pre-commit` hook runs the fast gate: format, `contract build`, `oxlint` and `bun test`.
+- Before each push, the `pre-push` hook runs the full gate. `bun exact.mjs test web` must pass. After a view change, the macOS tests must pass also.
+- Do not use `--no-verify`. Do not change `core.hooksPath`.
 - iOS: use one simulator for each parallel session. Shut the simulator down after the run.
 - iOS: the iPhone Duo leg cannot tap header bar buttons (`habit-menu`). This is a known Exact agent gap. "drive busy" means that another session holds the Duo. Try again later.
 - Android: the AVD is `habits_api37`. Mirror it with `android device hub`.

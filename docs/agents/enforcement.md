@@ -10,8 +10,11 @@ The full reasoning is in [claude-md-plan.md](claude-md-plan.md).
 |---|---|---|---|
 | GitHub ruleset `protect-main` | hard, server | at push time | yes |
 | CI workflow | hard after it is a required check | in PR checks | yes |
-| `bun test` (`rules.test.ts`) | hard in CI, manual locally | test output | yes |
-| `bun exact.mjs test web\|macos`, `verify web\|ios\|android` | hard when run; manual | command output | yes |
+| `bun test` (`rules.test.ts`) | hard in CI and in the `pre-commit` hook | test output | yes |
+| Git hooks (`.githooks/`, `scripts/gate.sh`) | hard after `git config core.hooksPath .githooks`; `--no-verify` skips them | hook output | yes |
+| Claude Code hooks (`scripts/claude-hook.sh`) | hard, Claude Code only | stderr on exit 2 | no |
+| `bun exact.mjs test web` | hard in the `pre-push` hook | hook output | yes |
+| `bun exact.mjs test macos`, `verify web\|ios\|android` | hard when run; manual | command output | yes |
 | `permissions.deny` in `.claude/settings.json` | hard, Claude Code only | denial text | no |
 | Path-scoped rule (`.claude/rules/code.md`) | context, not a check | yes, when a matching file is read or edited | by link only |
 | hookify `block` | soft: fails open | only "Blocked by hook" | no |
@@ -39,10 +42,11 @@ Status: EXISTS, NEW, CHANGED, LATER.
 | 6 | Views use native symbol and colour roles only | `bun test`: lint of `**/*.contract` | NEW |
 |   |   | `.claude/rules/code.md` | NEW |
 |   |   | hookify `warn-contract-non-native` (human-visible) | CHANGED |
-| 7 | Tests pass before a commit | CI `test.yml`: `bun test` | NEW |
-|   |   | `bun exact.mjs test web`, `test macos` (manual) | EXISTS |
-|   |   | hookify `warn-commit-without-tests` (human-visible) | EXISTS |
-|   |   | CI: `bun exact.mjs test web` | LATER |
+| 7 | Tests pass before a commit | CI `test.yml`: `scripts/gate.sh ci` runs `bun test` | CHANGED |
+|   |   | `pre-commit` hook: `scripts/gate.sh fast` runs `bun test` | NEW |
+|   |   | Claude Code `Stop` hook: `scripts/gate.sh check` on a dirty tree | NEW |
+|   |   | hookify `warn-commit-without-tests` (human-visible) | CHANGED |
+|   |   | `bun exact.mjs test macos` (manual) | EXISTS |
 | 8 | Platform verify at the end of a batch | `bun exact.mjs verify web\|ios\|android` (manual) | EXISTS |
 | 9 | Change the seam only when the ticket names it; update `SPEC.md` in the same PR | AI review, criterion 2 | EXISTS |
 |   |   | `.claude/rules/code.md` and inline text | NEW |
@@ -61,6 +65,29 @@ Status: EXISTS, NEW, CHANGED, LATER.
 | 20 | Layer import rules (target architecture) | judgement: doc only now | NEW text |
 |   |   | `bun test`: import-boundary test | LATER |
 | 21 | The data module does not read the clock | Exact refuses `Date.now` (`SPEC.md`) | EXISTS |
+| 22 | `.contract` and `.ts` files have the standard format | `pre-commit` hook: `contract fmt` and `oxfmt` format the staged files | NEW |
+|   |   | Claude Code `PostToolUse` hook: formats the edited file | NEW |
+|   |   | CI: `oxfmt --check` for `.ts` | NEW |
+|   |   | CI: `contract fmt --check` | LATER |
+| 23 | `app.contract` and `app.ts` build with no error | `pre-commit` hook: `contract build app.contract --json --errors-only` | NEW |
+| 24 | `.ts` files pass `oxlint` (default rules, `correctness` as errors) | `pre-commit` hook and CI: `oxlint` | NEW |
+| 25 | The web tests pass before a push | `pre-push` hook: `scripts/gate.sh full` | NEW |
+|   |   | CI: `bun exact.mjs test web` | LATER |
+| 26 | The Exact checkout is at the commit in `.exact-commit` | `pre-push` hook: `scripts/gate.sh full` | NEW |
+| 27 | The dependencies match `bun.lock` | CI: `bun install --frozen-lockfile` | NEW |
+| 28 | Do not skip the git hooks (`--no-verify`, `commit -n`); do not change `core.hooksPath` | Claude Code `PreToolUse` hook on `Bash` | NEW |
+|   |   | a person or another agent: judgement, doc only |   |
+| 29 | The git hooks are active in each clone | Claude Code `SessionStart` hook: `git config core.hooksPath .githooks`, `bun install` | NEW |
+|   |   | a person: runs `git config core.hooksPath .githooks` one time |   |
+
+## Gate rules
+
+- `scripts/gate.sh` holds the checks. The git hooks, the Claude Code hooks and CI call it.
+- A hook fixes only deterministic problems (format). A hook does not start an LLM.
+- A hook does not skip a check silently. If `node_modules` is missing, the hook fails and says `bun install`.
+- A hook does not format a file that is only partly staged. It fails and names the file.
+- The checks read the working tree, not the index.
+- The `Stop` hook blocks one time for each stop. It does not format staged files.
 
 ## Ideas not adopted
 
@@ -68,11 +95,11 @@ Status: EXISTS, NEW, CHANGED, LATER.
 |---|---|---|
 | hookify block on `git push … main` | no | The ruleset already rejects the push. A regex cannot see the branch of a bare `git push`. |
 | Block `git commit` on `main` | no | hookify sees the command text, not the branch. The ruleset stops the commit at the server. |
-| Block `--no-verify` | no | The repo has no git hook. The flag skips nothing. Add the rule together with a git hook. |
 | Commit trailer | no | No tool reads a trailer. A squash merge already adds the PR number. |
 | hookify warn on `SPEC.md` edits | no | A warn does not reach the model. testId edits are frequent. |
-| Native hooks in `settings.json` | no | `permissions.deny` and tests cover the hard rules with less code. |
 | `ask` rule `Edit(/AGENTS.md)` | optional | It puts a person in each `AGENTS.md` edit. It also stops headless runs. The owner decides. |
-| Git `pre-commit` hook that runs `bun test` | later | It needs `core.hooksPath` in each clone. CI gives the same check with no setup. |
+| Steiger | no | It reads TypeScript imports and `index.ts`, not `use` lines (ADR-0001, decision 3). |
+| Biome | no | `oxfmt` 0.80.0 and `oxlint` run under Bun 1.4.2. Biome was the fallback only. |
+| `oxlint --fix` in a hook | no | The ticket names format only. Add it when a fixable rule fails frequently. |
 | Seam diff check in CI | later | It needs a parser for seam lines. AI review covers it now. |
 

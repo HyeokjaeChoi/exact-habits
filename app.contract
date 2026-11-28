@@ -120,24 +120,47 @@ component Habits
     refresh habits
 
   view
-    main navigationKey=`${top(nav).id}` navigationBack="back" navigate=follow testId="app" width="100%" height="100%"
+    main navigationKey=`${top(nav).id}`
+      navigationBack="back"
+      navigate=follow
+      testId="app"
+      width="100%"
+      height="100%"
       for e in stack(nav) key=e.id
         if e.name == "today"
-          column navigationKey=`${e.id}` navigationSplit="split" navigationScroll="habit-list" position="absolute" inset=0 display="flex" flex-direction="column"
+          column navigationKey=`${e.id}`
+            navigationSplit="split"
+            navigationScroll="habit-list"
+            position="absolute"
+            inset=0
+            display="flex"
+            flex-direction="column"
             header display="flex" align-items="center"
               text "Today" role="heading" aria-level=1 flex=1
               text formatDate(shown, time.utcOffset, "medium") testId="today-date"
               button press=openAdd aria-label="Add Habit" testId="add-habit"
                 image "symbol:add"
             if failed(habits)
-              EmptyState(symbol="symbol:alert", title="Can’t Open Habits", message="Something went wrong reading them.")
+              EmptyState(
+                symbol="symbol:alert",
+                title="Can’t Open Habits",
+                message="Something went wrong reading them."
+              )
                 button press=reload testId="retry"
                   text "Try Again"
             else if habits.length == 0 and not pending(habits)
-              EmptyState(symbol="symbol:sparkles", title="Start a Habit", message="Pick one to begin, or add your own.")
+              EmptyState(
+                symbol="symbol:sparkles",
+                title="Start a Habit",
+                message="Pick one to begin, or add your own."
+              )
                 column gap=8
                   for s in suggestions() key=s
-                    button press=quickAdd(s) buttonStyle="bordered" min-height=44 aria-label=`Add ${s}` testId=`quick-${s}`
+                    button press=quickAdd(s)
+                      buttonStyle="bordered"
+                      min-height=44
+                      aria-label=`Add ${s}`
+                      testId=`quick-${s}`
                       text s
                   button press=openAdd buttonStyle="filled" min-height=44 testId="empty-add"
                     text "Add Habit"
@@ -147,35 +170,70 @@ component Habits
                   section
                     // One line over a thin native bar, stacked: side by side, a Mac sidebar squeezed the text to a letter a line.
                     column gap=6
-                      text `${doneCount} of ${habits.length} done` color="-exact-secondary-label" testId="progress"
+                      text `${doneCount} of ${habits.length} done` color="-exact-secondary-label"
+                        testId="progress"
                       progress value=fraction aria-label="Today’s progress" testId="progress-bar"
                 section
                   for h in habits key=h.id
                     row delete=remove(h.id)
-                      input type="checkbox" checked=h.doneToday change=toggle(h.id) aria-label=h.name testId=`check-${h.id}`
+                      input type="checkbox"
+                        checked=h.doneToday
+                        change=toggle(h.id)
+                        aria-label=h.name
+                        testId=`check-${h.id}`
                       // The name and streak are the link to the detail, as a row pushes; the checkbox stays apart.
                       // Done is the checkbox's to say; the strike-through is decoration. The streak reaches a screen reader through the link's label.
-                      link href=path("habit", h.id) aria-label=rowLabel(h) testId=`open-${h.id}`
-                        flex=1 min-width=0 min-height=44 display="flex" flex-wrap="wrap" align-items="center" gap=8
-                        image iconOf(h.icon) color=tintOf(h.color) width=24 flex-shrink=0 aria-hidden=true testId=`icon-${h.id}`
-                        text h.name flex=1 text-decoration=(h.doneToday ? "line-through" : "none") color=(h.doneToday ? "-exact-secondary-label" : "-exact-label") testId=`name-${h.id}`
+                      link href=path("habit", h.id)
+                        aria-label=rowLabel(h)
+                        testId=`open-${h.id}`
+                        flex=1
+                        min-width=0
+                        min-height=44
+                        display="flex"
+                        flex-wrap="wrap"
+                        align-items="center"
+                        gap=8
+                        image iconOf(h.icon) color=tintOf(h.color)
+                          width=24
+                          flex-shrink=0
+                          aria-hidden=true
+                          testId=`icon-${h.id}`
+                        text h.name flex=1
+                          text-decoration=(h.doneToday ? "line-through" : "none")
+                          color=(h.doneToday ? "-exact-secondary-label" : "-exact-label")
+                          testId=`name-${h.id}`
                         if h.streak > 0
                           view testId=`streak-${h.id}`
                             Badge(label=streakText(h.streak), tint=some("-exact-system-orange"))
                         image "symbol:forward-chevron" aria-hidden=true
             // The split's detail while no habit is selected (a wide window): ours, not the platform's "No Selection".
             column navigationSplit="placeholder" min-height=0
-              EmptyState(symbol="symbol:sparkles", title="Select a Habit", message="Its streak and history show here.")
+              EmptyState(
+                symbol="symbol:sparkles",
+                title="Select a Habit",
+                message="Its streak and history show here."
+              )
         if e.name == "habit"
-          column navigationKey=`${e.id}` navigationScroll="habit-detail" position="absolute" inset=0 display="flex" flex-direction="column"
+          column navigationKey=`${e.id}`
+            navigationScroll="habit-detail"
+            position="absolute"
+            inset=0
+            display="flex"
+            flex-direction="column"
             header display="flex" align-items="center" justify-content="space-between"
-              text (found(habits, e.params.id) or pending(habits) ? nameOf(habits, e.params.id) : "Not Found") role="heading" aria-level=2 testId="detail-title"
+              text (found(habits, e.params.id) or pending(habits) ? nameOf(habits, e.params.id) : "Not Found") role="heading"
+                aria-level=2
+                testId="detail-title"
               if found(habits, e.params.id)
                 button popovertarget="habit-menu" aria-label="More" testId="habit-menu"
                   image "symbol:more"
             if found(habits, e.params.id)
               column id="habit-menu" popover="auto" role="menu" aria-label="Habit"
-                button press=askRemove(e.params.id) destructive=true popovertarget="habit-menu" popovertargetaction="hide" testId="delete-habit"
+                button press=askRemove(e.params.id)
+                  destructive=true
+                  popovertarget="habit-menu"
+                  popovertargetaction="hide"
+                  testId="delete-habit"
                   text "Delete Habit"
             if found(habits, e.params.id) or pending(habits)
               list id="habit-detail" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
@@ -183,14 +241,32 @@ component Habits
                   // The hero: the current streak over its progress toward the best, in a transparent section so the part's own fill shows, centred and at most a phone wide.
                   section background-color="transparent"
                     row justify-content="center"
-                      image iconOf(h.icon) color=tintOf(h.color) font="-exact-large-title" aria-hidden=true testId="detail-icon"
+                      image iconOf(h.icon) color=tintOf(h.color)
+                        font="-exact-large-title"
+                        aria-hidden=true
+                        testId="detail-icon"
                     row
-                      column flex=1 min-width=0 max-width="26.25rem" margin-left="auto" margin-right="auto" testId="detail-streak"
-                        SummaryCard(label="Current Streak", value=`${h.streak}`, detail=(h.streak == 1 ? "day in a row" : "days in a row"), progress=(h.best > 0 ? some(min(1, h.streak / h.best)) : none), symbol=none)
+                      column flex=1
+                        min-width=0
+                        max-width="26.25rem"
+                        margin-left="auto"
+                        margin-right="auto"
+                        testId="detail-streak"
+                        SummaryCard(
+                          label="Current Streak",
+                          value=`${h.streak}`,
+                          detail=(h.streak == 1 ? "day in a row" : "days in a row"),
+                          progress=(h.best > 0 ? some(min(1, h.streak / h.best)) : none),
+                          symbol=none
+                        )
                   section
                     row
                       text "Done Today" flex=1
-                      input type="checkbox" switch checked=h.doneToday change=toggle(h.id) aria-label="Done Today" testId="detail-check"
+                      input type="checkbox" switch
+                        checked=h.doneToday
+                        change=toggle(h.id)
+                        aria-label="Done Today"
+                        testId="detail-check"
                   section
                     row
                       text "Best" flex=1
@@ -205,7 +281,11 @@ component Habits
                       column flex=1 min-width=0 gap=8
                         row aria-hidden=true
                           for n in ["S", "M", "T", "W", "T", "F", "S"] key=n
-                            text n flex=1 min-width=0 text-align="center" font="-exact-footnote" color="-exact-secondary-label"
+                            text n flex=1
+                              min-width=0
+                              text-align="center"
+                              font="-exact-footnote"
+                              color="-exact-secondary-label"
                         for w in [0, 1, 2, 3] key=w
                           row
                             for d in days.slice(w * 7, w * 7 + 7) key=d.day
@@ -213,38 +293,73 @@ component Habits
                                 view flex=1 min-width=0 aria-hidden=true testId=`future-${d.day}`
                               else
                                 // Today's tint sits on a view around the button: a radius or fill on the button itself would paint a platform control.
-                                view flex=1 min-width=0 border-radius=8 background-color=(d.day == today ? "-exact-tertiary-fill" : "transparent")
-                                  button press=toggleDay(e.params.id, d.day, not d.done) width="100%" min-height=44 aria-current=(d.day == today ? "date" : "") aria-label=dayLabel(d) testId=`day-${d.day}`
+                                view flex=1
+                                  min-width=0
+                                  border-radius=8
+                                  background-color=(d.day == today ? "-exact-tertiary-fill" : "transparent")
+                                  button press=toggleDay(e.params.id, d.day, not d.done)
+                                    width="100%"
+                                    min-height=44
+                                    aria-current=(d.day == today ? "date" : "")
+                                    aria-label=dayLabel(d)
+                                    testId=`day-${d.day}`
                                     DoneMark(caption=dayOfMonth(d.day), done=d.done)
             else
-              EmptyState(symbol="symbol:alert", title="No Such Habit", message="It may have been deleted.")
+              EmptyState(
+                symbol="symbol:alert",
+                title="No Such Habit",
+                message="It may have been deleted."
+              )
                 button press=back buttonStyle="filled" testId="missing-back"
                   text "Back to Today"
         if e.name == "add"
-          column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll="add-form" position="absolute" inset=0 display="flex" flex-direction="column"
+          column navigationKey=`${e.id}`
+            navigationPresentation="modal"
+            navigationScroll="add-form"
+            position="absolute"
+            inset=0
+            display="flex"
+            flex-direction="column"
             header display="flex" align-items="center" justify-content="space-between"
               button id="back" press=back aria-label="Cancel" testId="add-cancel"
                 image "symbol:close"
               text "New Habit" role="heading"
-              button press=save buttonStyle="bordered-prominent" aria-label="Save" testId="add-save" disabled=(draftName.trim() == "" or pending(added))
+              button press=save
+                buttonStyle="bordered-prominent"
+                aria-label="Save"
+                testId="add-save"
+                disabled=(draftName.trim() == "" or pending(added))
                 image "symbol:checkmark"
             list id="add-form" appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
               section
                 row
                   column flex=1 min-width=0 gap=4
-                    input value=draftName input=editName submit=save placeholder="Name" aria-label="Name" autofocus=true aria-invalid=(refusal != "") testId="add-name"
+                    input value=draftName
+                      input=editName
+                      submit=save
+                      placeholder="Name"
+                      aria-label="Name"
+                      autofocus=true
+                      aria-invalid=(refusal != "")
+                      testId="add-name"
                     if refusal != ""
-                      text refusal font="-exact-footnote" color="-exact-system-red" testId="add-error"
+                      text refusal font="-exact-footnote"
+                        color="-exact-system-red"
+                        testId="add-error"
                 footer
                   text saveHint testId="add-hint"
               section
                 row
                   text "Icon" flex=1
-                  button popovertarget="icon-menu" aria-label=`Icon, ${titled(draftIcon)}` testId="icon-picker"
+                  button popovertarget="icon-menu"
+                    aria-label=`Icon, ${titled(draftIcon)}`
+                    testId="icon-picker"
                     image iconOf(draftIcon) color=tintOf(draftColor) aria-hidden=true
                 row
                   text "Colour" flex=1
-                  button popovertarget="color-menu" aria-label=`Colour, ${titled(draftColor)}` testId="color-picker"
+                  button popovertarget="color-menu"
+                    aria-label=`Colour, ${titled(draftColor)}`
+                    testId="color-picker"
                     text titled(draftColor) color=tintOf(draftColor)
               if offered.length > 0
                 section
@@ -256,16 +371,30 @@ component Habits
                         text s
       column id="icon-menu" popover="auto" role="menu" aria-label="Icon"
         for i in ["sparkles", "book", "running", "walking", "heart", "moon", "star", "timer"] key=i
-          button role="menuitemradio" aria-checked=(draftIcon == i) press=pickIcon(i) popovertarget="icon-menu" popovertargetaction="hide" testId=`icon-${i}`
+          button role="menuitemradio"
+            aria-checked=(draftIcon == i)
+            press=pickIcon(i)
+            popovertarget="icon-menu"
+            popovertargetaction="hide"
+            testId=`icon-${i}`
             image iconOf(i) aria-hidden=true
             text titled(i)
       column id="color-menu" popover="auto" role="menu" aria-label="Colour"
         for c in ["orange", "red", "green", "blue", "purple", "teal"] key=c
-          button role="menuitemradio" aria-checked=(draftColor == c) press=pickColor(c) popovertarget="color-menu" popovertargetaction="hide" testId=`color-${c}`
+          button role="menuitemradio"
+            aria-checked=(draftColor == c)
+            press=pickColor(c)
+            popovertarget="color-menu"
+            popovertargetaction="hide"
+            testId=`color-${c}`
             text titled(c)
       dialog id="remove" role="alertdialog" aria-label="Delete Habit?"
         text "Its history is deleted too."
-        button press=remove(aimed) destructive=true commandfor="remove" command="close" testId="remove-confirm"
+        button press=remove(aimed)
+          destructive=true
+          commandfor="remove"
+          command="close"
+          testId="remove-confirm"
           text "Delete"
         button commandfor="remove" command="close" testId="remove-cancel"
           text "Cancel"
