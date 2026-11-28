@@ -1,7 +1,8 @@
 name: test
 
-# Unit tests and repo rules (rules.test.ts). `bun exact.mjs test web` in CI is a follow-up:
-# it needs a pinned checkout of expo/exact.
+# `scripts/gate.sh ci`: the oxfmt check, oxlint, unit tests and repo rules (rules.test.ts).
+# `contract fmt --check` and `bun exact.mjs test web` in CI are a follow-up:
+# they need a checkout of expo/exact at the commit in `.exact-commit`.
 
 on:
   pull_request:
@@ -20,4 +21,5 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
-      - run: bun test
+      - run: bun install --frozen-lockfile
+      - run: scripts/gate.sh ci
