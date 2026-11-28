@@ -39,6 +39,8 @@ This file is an index. Exact generates all text above this heading. Do not edit 
 | [SPEC.md](SPEC.md) | change a screen, a testId, a source or the seam |
 | [.claude/rules/code.md](.claude/rules/code.md) | edit a `.contract` or `.ts` file (Claude Code loads it by itself) |
 | [docs/agents/architecture.md](docs/agents/architecture.md) | add or move a file or a folder |
+| [docs/adr/](docs/adr/) | change a decision about the structure or the tools |
+| The `feature-sliced-design` skill (`npx skills add https://github.com/feature-sliced/skills --skill feature-sliced-design -g`) | decide where view code goes |
 | [docs/agents/enforcement.md](docs/agents/enforcement.md) | add or change a rule or its check |
 
 ## Rules that always apply
