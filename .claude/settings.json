@@ -1,0 +1,20 @@
+{
+  "enabledPlugins": {
+    "code-modernization@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "hookify@claude-plugins-official": true,
+    "claude-md-management@claude-plugins-official": true
+  },
+  "permissions": {
+    "deny": [
+      "Edit(/exact.mjs)",
+      "Edit(/app.contract.d.ts)",
+      "Edit(/.exact/**)",
+      "Bash(git stash)",
+      "Bash(git stash pop *)",
+      "Bash(git stash drop)",
+      "Bash(git stash clear)"
+    ]
+  }
+}
