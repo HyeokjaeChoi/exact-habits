@@ -93,7 +93,7 @@ test "a streak stays alive a day, grows, then breaks after a missed day"
   tap "check-1"
   clock data
   expect text "streak-1" == "1-day streak"
-  clock +86400000
+  clock + 86400000
   clock data
   expect text "today-date" == "Mar 15, 2026"
   expect text "streak-1" == "1-day streak"
@@ -102,7 +102,7 @@ test "a streak stays alive a day, grows, then breaks after a missed day"
   clock data
   expect text "streak-1" == "2-day streak"
   expect text "progress" == "1 of 1 done"
-  clock +172800000
+  clock + 172800000
   clock data
   expect text "today-date" == "Mar 17, 2026"
   expect tree missing "streak-1"
@@ -125,19 +125,19 @@ test "the streak card reads the current streak, in step with checking and unchec
   clock settle
   tap "check-1"
   clock data
-  clock +86400000
+  clock + 86400000
   clock data
   tap "check-1"
   clock data
-  clock +86400000
+  clock + 86400000
   clock data
   tap "check-1"
   clock data
-  clock +172800000
+  clock + 172800000
   clock data
   tap "check-1"
   clock data
-  clock +86400000
+  clock + 86400000
   clock data
   tap "check-1"
   clock data
@@ -170,7 +170,7 @@ test "the day turns over at local midnight"
   tap "check-1"
   clock data
   expect text "progress" == "1 of 1 done"
-  clock +180000
+  clock + 180000
   clock data
   expect text "today-date" == "Mar 15, 2026"
   expect text "progress" == "0 of 1 done"
