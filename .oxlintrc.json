@@ -1,4 +1,8 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
   "ignorePatterns": ["exact.mjs", "app.contract.d.ts", ".exact/"]
 }

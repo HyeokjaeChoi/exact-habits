@@ -34,8 +34,10 @@ case ${1:-} in
       echo "Blocked: do not skip the git hooks (--no-verify, commit -n). Fix the failure that scripts/gate.sh reports." >&2
       exit 2
     fi
-    if printf %s "$command" | grep -Eiq -- 'git .*(config|-c) *.*core\.hookspath'; then
-      echo "Blocked: do not read or change core.hooksPath. It must stay .githooks." >&2
+    # The one allowed form sets the value that the repo needs.
+    if printf %s "$command" | sed 's/git config core\.hooksPath \.githooks//g' |
+      grep -Eiq -- 'git .*(config|-c) *.*core\.hookspath'; then
+      echo "Blocked: do not change core.hooksPath. It must stay .githooks." >&2
       exit 2
     fi
     ;;
